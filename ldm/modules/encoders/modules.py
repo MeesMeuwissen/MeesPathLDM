@@ -4,7 +4,7 @@ from functools import partial
 import math
 from transformers import CLIPTokenizer, CLIPTextModel, AutoTokenizer
 from transformers.models.clip.modeling_clip import _make_causal_mask, _expand_mask
-import open_clip
+#import open_clip #for now, I removed it since we only need it for one class which I hope not to use
 from ldm.modules.x_transformer import (
     Encoder,
     TransformerWrapper,

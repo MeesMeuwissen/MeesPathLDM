@@ -7,6 +7,7 @@ import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
+import pytorch_lightning as pl
 
 from ldm.modules.diffusionmodules.util import (
     checkpoint,
@@ -497,6 +498,7 @@ class UNetModel(nn.Module):
         self.num_classes = num_classes
         self.use_checkpoint = use_checkpoint
         self.dtype = th.float16 if use_fp16 else th.float32
+
         self.num_heads = num_heads
         self.num_head_channels = num_head_channels
         self.num_heads_upsample = num_heads_upsample

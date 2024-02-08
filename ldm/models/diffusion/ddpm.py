@@ -16,7 +16,7 @@ from contextlib import contextmanager
 from functools import partial
 from tqdm import tqdm
 from torchvision.utils import make_grid
-from pytorch_lightning.utilities.distributed import rank_zero_only
+from pytorch_lightning.utilities import rank_zero_only
 
 # from pytorch_lightning.utilities.rank_zero import rank_zero_only
 
@@ -405,18 +405,20 @@ class DDPM(pl.LightningModule):
 
         self.log_dict(loss_dict, prog_bar=True, logger=True, on_step=True, on_epoch=True)
 
-        self.log(
-            "global_step",
-            self.global_step,
-            prog_bar=True,
-            logger=True,
-            on_step=True,
-            on_epoch=False,
-        )
+        # self.log(
+        #     "global_step",
+        #     self.global_step,
+        #     prog_bar=True,
+        #     logger=True,
+        #     on_step=True,
+        #     on_epoch=False,
+        # )
+
+        self.trainer.logger.log_metrics({"global_step": self.global_step})
 
         if self.use_scheduler:
             lr = self.optimizers().param_groups[0]["lr"]
-            self.log("lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False)
+            #self.log("lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False, batch_size=len(batch))
 
         return loss
 
@@ -564,7 +566,7 @@ class LatentDiffusion(DDPM):
 
     @rank_zero_only
     @torch.no_grad()
-    def on_train_batch_start(self, batch, batch_idx, dataloader_idx):
+    def on_train_batch_start(self, batch, batch_idx):
         # only for very first batch
         if (
             self.scale_by_std
@@ -584,6 +586,7 @@ class LatentDiffusion(DDPM):
             self.register_buffer("scale_factor", 1.0 / z.flatten().std())
             print(f"setting self.scale_factor to {self.scale_factor}")
             print("### USING STD-RESCALING ###")
+
 
     def register_schedule(
         self,
@@ -1008,6 +1011,7 @@ class LatentDiffusion(DDPM):
             if self.shorten_cond_schedule:  # TODO: drop this option
                 tc = self.cond_ids[t].to(self.device)
                 c = self.q_sample(x_start=c, t=tc, noise=torch.randn_like(c.float()))
+
         return self.p_losses(x, c, t, *args, **kwargs)
 
     def _rescale_annotations(self, bboxes, crop_coordinates):  # TODO: move to dataset

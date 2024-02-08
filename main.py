@@ -1,4 +1,6 @@
 import argparse, os, sys, datetime, glob, importlib, csv
+from typing import Any
+
 import numpy as np
 import time
 import torch
@@ -7,21 +9,29 @@ import pytorch_lightning as pl
 
 from packaging import version
 from omegaconf import OmegaConf
+from pytorch_lightning.utilities.types import STEP_OUTPUT
+from torch import Tensor
 from torch.utils.data import random_split, DataLoader, Dataset, Subset
 from functools import partial
 from PIL import Image
 
 from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateMonitor
-from pytorch_lightning.utilities.distributed import rank_zero_only
+from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateMonitor, EarlyStopping
+from pytorch_lightning.utilities import rank_zero_only
+from pytorch_lightning import LightningModule, Trainer
 
+import torchvision.transforms as transforms
 # from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info
 
 from ldm.data.base import Txt2ImgIterableBaseDataset
 from ldm.util import instantiate_from_config
+
+# Neptune Logging
+from pytorch_lightning.loggers import NeptuneLogger
 from pytorch_lightning.plugins import DDPPlugin
+
 os.environ["WANDB_SILENT"] = "true"
 
 
@@ -120,6 +130,11 @@ def get_parser(**parser_kwargs):
         default=False,
         help="scale base-lr by ngpu * batch_size * n_accumulate",
     )
+
+    parser.add_argument(
+        "--neptune_mode",  type=str, default="async", help="mode neptune should run in (sync, async or debug or ...)"
+    )
+
     parser.add_argument("--wandb_name", type=str, help="run name for wandb")
     parser.add_argument("--wandb_id", type=str, help="run id for wandb")
     return parser
@@ -127,7 +142,7 @@ def get_parser(**parser_kwargs):
 
 def nondefault_trainer_args(opt):
     parser = argparse.ArgumentParser()
-    parser = Trainer.add_argparse_args(parser)
+    # parser = Trainer.add_argparse_args(parser) #Only works with lightning 1.4
     args = parser.parse_args([])
     return sorted(k for k in vars(args) if getattr(opt, k) != getattr(args, k))
 
@@ -228,7 +243,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             worker_init_fn=init_fn,
-            shuffle=shuffle,
+            shuffle=False,
         )
 
     def _test_dataloader(self, shuffle=False):
@@ -336,7 +351,7 @@ class ImageLogger(Callback):
         self.batch_freq = batch_frequency
         self.max_images = max_images
         self.logger_log_images = {
-            pl.loggers.TestTubeLogger: self._testtube,
+            pl.loggers.NeptuneLogger: self._testtube,
         }
         self.log_steps = [2**n for n in range(int(np.log2(self.batch_freq)) + 1)]
         if not increase_log_steps:
@@ -423,9 +438,17 @@ class ImageLogger(Callback):
             return True
         return False
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        if not self.disabled and (pl_module.global_step > 0 or self.log_first_step):
-            self.log_img(pl_module, batch, batch_idx, split="train")
+    def on_train_batch_end(
+        self,
+        trainer,
+        pl_module,
+        outputs,
+        batch,
+        batch_idx,
+    ):
+        # if not self.disabled and (pl_module.global_step > 0 or self.log_first_step):
+        #     self.log_img(pl_module, batch, batch_idx, split="train")
+        pass
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
         if not self.disabled and pl_module.global_step > 0:
@@ -439,8 +462,8 @@ class CUDACallback(Callback):
     # see https://github.com/SeanNaren/minGPT/blob/master/mingpt/callback.py
     def on_train_epoch_start(self, trainer, pl_module):
         # Reset the memory use counter
-        torch.cuda.reset_peak_memory_stats(trainer.root_gpu)
-        torch.cuda.synchronize(trainer.root_gpu)
+        torch.cuda.reset_peak_memory_stats(trainer.strategy.root_device.index)
+        torch.cuda.synchronize(trainer.strategy.root_device.index)
         self.start_time = time.time()
 
     def on_train_epoch_end(self, trainer, pl_module, outputs):
@@ -456,6 +479,45 @@ class CUDACallback(Callback):
             rank_zero_info(f"Average Peak memory {max_memory:.2f}MiB")
         except AttributeError:
             pass
+
+
+class ThesisCallback(Callback):
+    def __init__(self):
+        super().__init__()
+
+    def on_train_batch_end(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
+    ) -> None:
+        trainer.logger.log_metrics({"Loss": outputs["loss"]}, step=trainer.global_step)
+
+    def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        print("THESISCALLBACK: Training is starting...")
+
+        # Log the neptune mode to the run as metadata
+        trainer.logger.experiment["Neptune Mode"] = opt.neptune_mode
+       #trainer.logger.log_hyperparams(pl_module.hparams) # Unclear if this will work
+
+    def on_train_end(self, trainer, pl_module):
+        print("Training is finished")
+
+    def on_train_batch_start(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", batch: Any, batch_idx: int
+    ) -> None:
+        # Try to log the batch
+        for pic in batch:
+            print(type(pic))
+            print(pic)
+            pil = transforms.ToPILImage(pic)
+            #trainer.logger.experiment["train/batch"].upload(pil)
+        print("Logged the batch to train/batch")
+
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
+        # hopefully progress
+        print(f"Finished the epoch, global step:{trainer.global_step}.")
+
+    def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        print(f"Starting epoch {trainer.current_epoch}. ")
 
 
 if __name__ == "__main__":
@@ -501,6 +563,7 @@ if __name__ == "__main__":
     #               key: value
 
     now = datetime.datetime.now().strftime("%m-%dT%H-%M")
+    torch.set_float32_matmul_precision("medium")
 
     # add cwd for convenience and to make classes in this file available when
     # running as `python main.py`
@@ -508,9 +571,13 @@ if __name__ == "__main__":
     sys.path.append(os.getcwd())
 
     parser = get_parser()
-    parser = Trainer.add_argparse_args(parser)
+    # parser = Trainer.add_argparse_args(parser) #Only works with lightning version 1.4
 
     opt, unknown = parser.parse_known_args()
+
+    # Set Neptune mode
+    os.environ["NEPTUNE_MODE"] = opt.neptune_mode
+    print(f"Setting Neptune mode to {opt.neptune_mode}")
     if opt.name and opt.resume:
         raise ValueError(
             "-n/--name and -r/--resume cannot be specified both."
@@ -564,7 +631,7 @@ if __name__ == "__main__":
         trainer_config["accelerator"] = "ddp"
         for k in nondefault_trainer_args(opt):
             trainer_config[k] = getattr(opt, k)
-        if not "gpus" in trainer_config:
+        if "gpus" not in trainer_config:
             del trainer_config["accelerator"]
             cpu = True
         else:
@@ -575,34 +642,24 @@ if __name__ == "__main__":
         lightning_config.trainer = trainer_config
 
         # model
+        print("Attempting to load model ...")
         model = instantiate_from_config(config.model)
+        print("Model loaded.")
 
         # trainer and callbacks
         trainer_kwargs = dict()
 
         # default logger configs
         default_logger_cfgs = {
-            "wandb": {
-                "target": "pytorch_lightning.loggers.WandbLogger",
+            "neptune": {
+                "target": "pytorch_lightning.loggers.NeptuneLogger",
                 "params": {
-                    "project": "tcga-brca",
-                    "name": opt.wandb_name or nowname,
-                    "save_dir": logdir,
-                    "offline": opt.debug,
-                    "id": opt.wandb_id or nowname,
-                    "resume": "must" if opt.wandb_id else None,
-                    "config": vars(opt),
-                },
-            },
-            "testtube": {
-                "target": "pytorch_lightning.loggers.TestTubeLogger",
-                "params": {
-                    "name": "testtube",
+                    "name": "neptune",
                     "save_dir": logdir,
                 },
             },
         }
-        default_logger_cfg = default_logger_cfgs["wandb"]
+        default_logger_cfg = default_logger_cfgs["neptune"]
         if "logger" in lightning_config:
             logger_cfg = lightning_config.logger
         else:
@@ -616,7 +673,7 @@ if __name__ == "__main__":
             "target": "pytorch_lightning.callbacks.ModelCheckpoint",
             "params": {
                 "dirpath": ckptdir,
-                "filename": "{epoch:06}",
+                "filename": "{epoch:01}",
                 "verbose": True,
                 "save_last": True,
             },
@@ -631,7 +688,6 @@ if __name__ == "__main__":
         else:
             modelckpt_cfg = OmegaConf.create()
         modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
-        print(f"Merged modelckpt-cfg: \n{modelckpt_cfg}")
         if version.parse(pl.__version__) < version.parse("1.4.0"):
             trainer_kwargs["checkpoint_callback"] = instantiate_from_config(modelckpt_cfg)
 
@@ -664,7 +720,6 @@ if __name__ == "__main__":
         }
         if version.parse(pl.__version__) >= version.parse("1.4.0"):
             default_callbacks_cfg.update({"checkpoint_callback": modelckpt_cfg})
-
         if "callbacks" in lightning_config:
             callbacks_cfg = lightning_config.callbacks
         else:
@@ -696,10 +751,26 @@ if __name__ == "__main__":
             del callbacks_cfg["ignore_keys_callback"]
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
+        # trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
 
-        trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
+        # define my own trainer:
+        neptune_logger = NeptuneLogger(
+            api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
+            project="generation",
+            name=trainer_config['run_name'],
+        )
+
+        trainer = Trainer(
+            max_epochs=3,
+            accelerator="gpu",
+            devices=1,
+            logger=neptune_logger,
+            callbacks=[ThesisCallback()],
+            log_every_n_steps=1
+
+        )
         trainer.logdir = logdir  ###
-
+        print("Trying to load data ...")
         # data
         data = instantiate_from_config(config.data)
         # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
@@ -741,6 +812,7 @@ if __name__ == "__main__":
             if trainer.global_rank == 0:
                 print("Summoning checkpoint.")
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
+                print("ckpt path:", ckpt_path)
                 trainer.save_checkpoint(ckpt_path)
 
         def divein(*args, **kwargs):
@@ -757,7 +829,8 @@ if __name__ == "__main__":
         # run
         if opt.train:
             try:
-                trainer.fit(model, data)
+                with torch.autocast(device_type="cuda"):  # This apparently solves everything
+                    trainer.fit(model, data)
             except Exception:
                 melk()
                 raise
