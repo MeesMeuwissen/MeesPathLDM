@@ -2,17 +2,46 @@ import importlib
 
 import torch
 import numpy as np
+import pytorch_lightning as pl
+
 from collections import abc
 from einops import rearrange
 from functools import partial
+from neptune.types import File
 
+
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import multiprocessing as mp
 from threading import Thread
 from queue import Queue
+import matplotlib.pyplot as plt
 
 from inspect import isfunction
 from PIL import Image, ImageDraw, ImageFont
 
+def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_rows: int = 4,  num_cols: int = 4,  split: str = "train", figsize: Tuple[int, int] = (10,10)) -> None:
+    """
+    Plot images with batch inputs, masks, and outputs.
+    Args:
+        trainer: Lightning Trainer
+        images: Batch input images.
+        num_rows: Number of rows
+        num_cols: Number of columns
+        split: split (train, val or test) of the data
+        figsize: Figure size
+    Returns:
+        None
+    """
+
+    fig, axes = plt.subplots(num_rows, num_cols, figsize=figsize)
+    for i, ax in enumerate(axes.flat):
+        # Display an image
+        if i < len(images):
+            image = images[i].cpu().detach().numpy()
+            ax.imshow(image) # Images are HWC
+        ax.axis('off')  # Hide axis
+
+    trainer.logger.experiment[f"batch_samples/{split}/epoch_{trainer.current_epoch}/{batch_idx}"].append(fig, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
 
 def log_txt_as_img(wh, xc, size=10):
     # wh a tuple of (width, height)

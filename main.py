@@ -22,11 +22,12 @@ from pytorch_lightning.utilities import rank_zero_only
 from pytorch_lightning import LightningModule, Trainer
 
 import torchvision.transforms as transforms
+
 # from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info
 
 from ldm.data.base import Txt2ImgIterableBaseDataset
-from ldm.util import instantiate_from_config
+from ldm.util import instantiate_from_config, plot_images
 
 # Neptune Logging
 from pytorch_lightning.loggers import NeptuneLogger
@@ -132,7 +133,7 @@ def get_parser(**parser_kwargs):
     )
 
     parser.add_argument(
-        "--neptune_mode",  type=str, default="async", help="mode neptune should run in (sync, async or debug or ...)"
+        "--neptune_mode", type=str, default="async", help="mode neptune should run in (sync, async or debug or ...)"
     )
 
     parser.add_argument("--wandb_name", type=str, help="run name for wandb")
@@ -488,28 +489,25 @@ class ThesisCallback(Callback):
     def on_train_batch_end(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
     ) -> None:
-        trainer.logger.log_metrics({"Loss": outputs["loss"]}, step=trainer.global_step)
+        trainer.logger.log_metrics({"train/loss": outputs["loss"]}, step=trainer.global_step)
 
     def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         print("THESISCALLBACK: Training is starting...")
 
         # Log the neptune mode to the run as metadata
         trainer.logger.experiment["Neptune Mode"] = opt.neptune_mode
-       #trainer.logger.log_hyperparams(pl_module.hparams) # Unclear if this will work
 
     def on_train_end(self, trainer, pl_module):
-        print("Training is finished")
+        print("Training completed.")
 
     def on_train_batch_start(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", batch: Any, batch_idx: int
     ) -> None:
-        # Try to log the batch
-        for pic in batch:
-            print(type(pic))
-            print(pic)
-            pil = transforms.ToPILImage(pic)
-            #trainer.logger.experiment["train/batch"].upload(pil)
-        print("Logged the batch to train/batch")
+        split = "train"
+        # log the batch every 500 batches ?
+        if batch_idx % 500 == 0:
+            plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4, split=split)
+        # print(f"Logged the batch to batch_samples/{split}/{batch_idx}")
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
@@ -517,7 +515,8 @@ class ThesisCallback(Callback):
         print(f"Finished the epoch, global step:{trainer.global_step}.")
 
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        print(f"Starting epoch {trainer.current_epoch}. ")
+        # print(f"Starting epoch {trainer.current_epoch}. ")
+        pass
 
 
 if __name__ == "__main__":
@@ -575,8 +574,14 @@ if __name__ == "__main__":
 
     opt, unknown = parser.parse_known_args()
 
-    # Set Neptune mode
+    # Set Neptune mode, project and API key
+    os.environ[
+        "NEPTUNE_API_TOKEN"
+    ] = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\="
+    os.environ["NEPTUNE_PROJECT"] = "aiosyn/generation"
     os.environ["NEPTUNE_MODE"] = opt.neptune_mode
+
+    os.environ["PYTHONUNBUFFERED"] = 1
     print(f"Setting Neptune mode to {opt.neptune_mode}")
     if opt.name and opt.resume:
         raise ValueError(
@@ -705,17 +710,6 @@ if __name__ == "__main__":
                     "lightning_config": lightning_config,
                 },
             },
-            "image_logger": {
-                "target": "main.ImageLogger",
-                "params": {"batch_frequency": 750, "max_images": 4, "clamp": True},
-            },
-            "learning_rate_logger": {
-                "target": "main.LearningRateMonitor",
-                "params": {
-                    "logging_interval": "step",
-                    # "log_momentum": True
-                },
-            },
             "cuda_callback": {"target": "main.CUDACallback"},
         }
         if version.parse(pl.__version__) >= version.parse("1.4.0"):
@@ -725,25 +719,6 @@ if __name__ == "__main__":
         else:
             callbacks_cfg = OmegaConf.create()
 
-        if "metrics_over_trainsteps_checkpoint" in callbacks_cfg:
-            print(
-                "Caution: Saving checkpoints every n train steps without deleting. This might require some free space."
-            )
-            default_metrics_over_trainsteps_ckpt_dict = {
-                "metrics_over_trainsteps_checkpoint": {
-                    "target": "pytorch_lightning.callbacks.ModelCheckpoint",
-                    "params": {
-                        "dirpath": os.path.join(ckptdir, "trainstep_checkpoints"),
-                        "filename": "{epoch:06}-{step:09}",
-                        "verbose": True,
-                        "save_top_k": -1,
-                        "every_n_train_steps": 10000,
-                        "save_weights_only": True,
-                    },
-                }
-            }
-            default_callbacks_cfg.update(default_metrics_over_trainsteps_ckpt_dict)
-
         callbacks_cfg = OmegaConf.merge(default_callbacks_cfg, callbacks_cfg)
         if "ignore_keys_callback" in callbacks_cfg and hasattr(trainer_opt, "resume_from_checkpoint"):
             callbacks_cfg.ignore_keys_callback.params["ckpt_path"] = trainer_opt.resume_from_checkpoint
@@ -751,23 +726,27 @@ if __name__ == "__main__":
             del callbacks_cfg["ignore_keys_callback"]
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
-        # trainer = Trainer.from_argparse_args(trainer_opt, **trainer_kwargs)
 
         # define my own trainer:
         neptune_logger = NeptuneLogger(
             api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
             project="generation",
-            name=trainer_config['run_name'],
+            name=trainer_config["run_name"],
+            log_model_checkpoints=trainer_config.log_model_checkpoints,
         )
+        # Log all hyperparams
+        neptune_logger.log_hyperparams(params=config)
+        neptune_logger.log_hyperparams(params=trainer_config)
 
+        print(f"Trainer config skip_validation: {trainer_config.skip_validation}")
+        print(f"Max epochs: {trainer_config.max_epochs}")
         trainer = Trainer(
-            max_epochs=3,
+            max_epochs=trainer_config.max_epochs,
             accelerator="gpu",
             devices=1,
             logger=neptune_logger,
-            callbacks=[ThesisCallback()],
-            log_every_n_steps=1
-
+            callbacks=[ThesisCallback(), CUDACallback()],
+            log_every_n_steps=1,
         )
         trainer.logdir = logdir  ###
         print("Trying to load data ...")
@@ -830,11 +809,16 @@ if __name__ == "__main__":
         if opt.train:
             try:
                 with torch.autocast(device_type="cuda"):  # This apparently solves everything
-                    trainer.fit(model, data)
+                    if trainer_config.skip_validation:
+                        # Only perform the training, no FID computation.
+                        trainer.fit(model, data, val_dataloaders=None)
+                    else:
+                        trainer.fit(model, data)
+                    print("Trainer has fitted the model.")
             except Exception:
                 melk()
                 raise
-        if not opt.no_test and not trainer.interrupted:
+        if not trainer_config.skip_test and not trainer.interrupted:
             trainer.test(model, data)
     except Exception:
         # try:

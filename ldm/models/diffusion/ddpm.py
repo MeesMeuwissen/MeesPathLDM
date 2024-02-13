@@ -418,7 +418,8 @@ class DDPM(pl.LightningModule):
 
         if self.use_scheduler:
             lr = self.optimizers().param_groups[0]["lr"]
-            #self.log("lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False, batch_size=len(batch))
+            print("Logging batch size and some other stuff")
+            self.log("lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False, batch_size=len(batch["image"]))
 
         return loss
 

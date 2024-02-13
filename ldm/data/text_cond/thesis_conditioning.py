@@ -1,6 +1,7 @@
 import io
 from pathlib import Path
 
+import os
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +10,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 from torch.utils.data import Dataset, Subset
 from torchvision.datasets import MNIST
+import pandas
 
 
 class TCGADataset(Dataset):
@@ -106,17 +108,20 @@ class HandwrittenDigits(Dataset):
         indices = list(range(0, self.size))
         self.mnist_dataset = Subset(self.mnist_dataset, indices)
 
-        self.transform = transforms.Compose([
-            transforms.Resize((256,256)),
-            lambda x: x.convert("RGB"),
-            transforms.ToTensor(),
-            lambda x: x.permute(1,2,0)
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((256, 256)),
+                lambda x: x.convert("RGB"),
+                transforms.ToTensor(),
+                lambda x: x.permute(1, 2, 0),
+            ]
+        )
 
     def __len__(self):
         return len(self.mnist_dataset)
 
     def __getitem__(self, id):
+        # In this loop, id are simply integers.
         # transform the image to tensor
         img = self.transform(self.mnist_dataset[id][0])
         label = self.mnist_dataset[id][1]
@@ -127,4 +132,44 @@ class HandwrittenDigits(Dataset):
         # HWC should be [256,256,3]
         assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
 
+        return {"image": img, "caption": caption}
+
+
+class KidneyUnconditional(Dataset):
+    def __init__(self, config=None):
+        self.data_dir = Path(config.get("root"))
+        self.slides_list = os.listdir(self.data_dir)
+        self.csv = pandas.read_csv(config.get("csv"))
+        self.size = config.get("size", None)
+
+        self.crop_size = config.get("crop_size", None)
+        self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
+        self.flip_vertical = config.get("flip_v", 0)
+
+        self.transform = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(p=self.flip_horizontal),
+                transforms.RandomVerticalFlip(p=self.flip_vertical),
+                transforms.ToTensor(),
+                lambda x: x.permute(1, 2, 0),
+            ]
+        )
+
+    def __len__(self):
+        if self.size is not None:
+            return self.size
+        return len(self.csv)
+
+    def __getitem__(self, idx):
+        caption = ""  # empty caption to simulate unconditional training ?
+
+        img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
+        img_path = os.path.join(self.data_dir, img_path)
+
+        img = Image.open(img_path).convert("RGB")
+
+        img = self.transform(img)
+
+        # should be HWC
+        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
         return {"image": img, "caption": caption}
