@@ -1,8 +1,9 @@
-from aiosynawsmodules.services.batch import submit_batch_job
 from aiosynawsmodules.services.sso import set_sso_profile
 import logging
 
-set_sso_profile(profile_name="Administrators-112272234196", region_name="eu-west-1")
+from aiosynawsmodules.services.batch import submit_batch_job
+
+set_sso_profile(profile_name="aws-aiosyn-workloads-dev", region_name="eu-west-1")  #What is the correct profile?
 logging.basicConfig(level=logging.INFO)
 
 submit_batch_job(
