@@ -38,7 +38,8 @@ for key in "${!repo_dict[@]}"; do
     echo "Cloning $key:${repo_dict[$key]} ..."
     git clone --quiet --recurse-submodules --branch "${repo_dict[$key]}" "https://$GITHUB_PAT@github.com/aiosyn/$key.git" "$HOME/code/$key"
 done
-git clone --quiet --recurse-submodules https://github.com/MeesMeuwissen/generationLDM
+echo "Cloning MeesMeuwissen/generationLDM ..."
+git clone --quiet --recurse-submodules https://github.com/MeesMeuwissen/generationLDM "$HOME/code/generationLDM"
 echo "Done."
 
 # Get the Aiosyn repositories and add them to the python search path.
@@ -61,6 +62,7 @@ echo "User: $(whoami)"
 echo "Python: $(which python)"
 echo "Version: $(python --version)"
 echo "Environment: ${CONDA_DEFAULT_ENV}"
+echo "Activated environment: ${AIOSYN_CONDA_ENV}"
 echo "Command: ${*}"
 
 # exec conda run --name="${AIOSYN_CONDA_ENV}" --no-capture-output "${@}"
