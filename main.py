@@ -182,6 +182,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
     def __init__(
         self,
         batch_size,
+        location,
         train=None,
         validation=None,
         test=None,
@@ -191,10 +192,12 @@ class DataModuleFromConfig(pl.LightningDataModule):
         shuffle_test_loader=False,
         use_worker_init_fn=False,
         shuffle_val_dataloader=True,
+
     ):
         super().__init__()
         self.batch_size = batch_size
         self.dataset_configs = dict()
+        self.location = location
         self.num_workers = num_workers if num_workers is not None else batch_size * 2
         self.use_worker_init_fn = use_worker_init_fn
         if train is not None:
@@ -211,10 +214,10 @@ class DataModuleFromConfig(pl.LightningDataModule):
             self.predict_dataloader = self._predict_dataloader
         self.wrap = wrap
 
-    def prepare_data(self, location):
+    def prepare_data(self):
         #Add the location to each of the configs.
         for entry in self.dataset_configs:
-            self.dataset_configs[entry]["params"]["config"]["location"] = location
+            self.dataset_configs[entry]["params"]["config"]["location"] = self.location
 
         for data_cfg in self.dataset_configs.values():
             instantiate_from_config(data_cfg)
@@ -756,7 +759,8 @@ if __name__ == "__main__":
         trainer.logdir = logdir  ###
 
         assert config.data.location in ["local", "remote"], "Data location should be 'local' or 'remote'"
-
+        # Add location to the data config params
+        config.data["params"]["location"] = config.data.location
         if config.data.location == "local" and config.data.already_downloaded == True:
             print("Data already download, skipping download...")
         else:
@@ -766,7 +770,7 @@ if __name__ == "__main__":
         # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
         # calling these ourselves should not be necessary but it is.
         # lightning still takes care of proper multiprocessing though
-        data.prepare_data(location=config.data.location)
+        data.prepare_data()
         data.setup()
         print("#### Data #####")
         for k in data.datasets:
