@@ -137,10 +137,21 @@ class HandwrittenDigits(Dataset):
 
 class KidneyUnconditional(Dataset):
     def __init__(self, config=None):
+        self.location = config.get("location")
         self.data_dir = Path(config.get("root"))
+        if self.location == "local":
+            prefix = Path("/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data/")
+        elif self.location == "remote":
+            prefix = Path("/tmp/data/")
+        else:
+            raise ValueError("Wrong location. Please choose either 'local' or 'remote'.")
+
+        self.data_dir = prefix / self.data_dir
+        self.csv = prefix / config.get("csv")
+        self.csv = pandas.read_csv(self.csv)
+
         self.slides_list = os.listdir(self.data_dir)
-        self.csv = pandas.read_csv(config.get("csv"))
-        self.size = config.get("size", None)
+        self.size = min(config.get("size"), len(self.csv))
 
         self.crop_size = config.get("crop_size", None)
         self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
@@ -156,9 +167,7 @@ class KidneyUnconditional(Dataset):
         )
 
     def __len__(self):
-        if self.size is not None:
-            return self.size
-        return len(self.csv)
+        return self.size
 
     def __getitem__(self, idx):
         caption = ""  # empty caption to simulate unconditional training ?

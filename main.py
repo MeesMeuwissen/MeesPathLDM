@@ -28,10 +28,11 @@ from pytorch_lightning.utilities import rank_zero_info
 
 from ldm.data.base import Txt2ImgIterableBaseDataset
 from ldm.util import instantiate_from_config, plot_images
+from get_data import download_dataset
 
 # Neptune Logging
 from pytorch_lightning.loggers import NeptuneLogger
-from pytorch_lightning.plugins import DDPPlugin
+#from pytorch_lightning.plugins import DDPPlugin
 
 os.environ["WANDB_SILENT"] = "true"
 
@@ -210,7 +211,11 @@ class DataModuleFromConfig(pl.LightningDataModule):
             self.predict_dataloader = self._predict_dataloader
         self.wrap = wrap
 
-    def prepare_data(self):
+    def prepare_data(self, location):
+        #Add the location to each of the configs.
+        for entry in self.dataset_configs:
+            self.dataset_configs[entry]["params"]["config"]["location"] = location
+
         for data_cfg in self.dataset_configs.values():
             instantiate_from_config(data_cfg)
 
@@ -581,7 +586,7 @@ if __name__ == "__main__":
     os.environ["NEPTUNE_PROJECT"] = "aiosyn/generation"
     os.environ["NEPTUNE_MODE"] = opt.neptune_mode
 
-    os.environ["PYTHONUNBUFFERED"] = 1
+    os.environ["PYTHONUNBUFFERED"] = "1"
     print(f"Setting Neptune mode to {opt.neptune_mode}")
     if opt.name and opt.resume:
         raise ValueError(
@@ -749,18 +754,23 @@ if __name__ == "__main__":
             log_every_n_steps=1,
         )
         trainer.logdir = logdir  ###
-        print("Trying to load data ...")
+
+        assert config.data.location in ["local", "remote"], "Data location should be 'local' or 'remote'"
+
+        if config.data.location == "local" and config.data.already_downloaded == True:
+            print("Data already download, skipping download...")
+        else:
+            download_dataset(dataset_name=config.data.dataset_name, location=config.data.location, subsample=config.data.subsample)
         # data
         data = instantiate_from_config(config.data)
         # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
         # calling these ourselves should not be necessary but it is.
         # lightning still takes care of proper multiprocessing though
-        data.prepare_data()
+        data.prepare_data(location=config.data.location)
         data.setup()
         print("#### Data #####")
         for k in data.datasets:
             print(f"{k}, {data.datasets[k].__class__.__name__}, {len(data.datasets[k])}")
-
         # configure learning rate
         bs, base_lr = config.data.params.batch_size, config.model.base_learning_rate
         if not cpu:
