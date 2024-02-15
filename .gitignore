@@ -15,3 +15,5 @@ wandb
 outputs
 taming/
 plip_imagenet_finetune
+src/taming-transformers/*
+!src/taming-transformers/taming/
