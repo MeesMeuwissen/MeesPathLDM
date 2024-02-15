@@ -97,7 +97,6 @@ data:
           flip_v: 0.5
           size: 100000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
           crop_size: 256 # size of the images
-          channels: 3 # I think the size of the input imgs have to be [256,256,3] for it to work.
     test:
       target: ldm.data.text_cond.thesis_conditioning.KidneyUnconditional
       params:
@@ -107,16 +106,15 @@ data:
           split: test
           size: 100
           crop_size: 256
-          channels: 3
-#    validation: #For now, this is the same as the test split...
-#      target: ldm.data.text_cond.thesis_conditioning.HandwrittenDigits
-#      params:
-#        config:
-#          root: /mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/code/ThesisProject
-#          split: test #put test here to get the mnist test imgs.
-#          size: 5
-#          crop_size: 256
-#          channels: 3
+    validation: #For now, this is the same as the test split...
+      target: ldm.data.text_cond.thesis_conditioning.Kidneyunconditional
+      params:
+        config:
+          root: first_patch_dataset_1.00_spacing/patches
+          csv: first_patch_dataset_1.00_spacing/patches.csv
+          split: validation
+          size: 5
+          crop_size: 256
 
 
 lightning:
