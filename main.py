@@ -137,8 +137,9 @@ def get_parser(**parser_kwargs):
         "--neptune_mode", type=str, default="async", help="mode neptune should run in (sync, async or debug or ...)"
     )
 
-    parser.add_argument("--wandb_name", type=str, help="run name for wandb")
-    parser.add_argument("--wandb_id", type=str, help="run id for wandb")
+    parser.add_argument(
+        "--location", type=str, default='local', help="Run locally (laptop) or remote (aws)"
+    )
     return parser
 
 
@@ -757,12 +758,12 @@ if __name__ == "__main__":
             log_every_n_steps=1,
         )
         trainer.logdir = logdir  ###
-
+        config.data['location'] = opt.location
         assert config.data.location in ["local", "remote"], "Data location should be 'local' or 'remote'"
         # Add location to the data config params
         config.data["params"]["location"] = config.data.location
         if config.data.location == "local" and config.data.already_downloaded == True:
-            print("Data already download, skipping download...")
+            print("Data already downloaded, skipping download...")
         else:
             download_dataset(dataset_name=config.data.dataset_name, location=config.data.location, subsample=config.data.subsample)
         # data

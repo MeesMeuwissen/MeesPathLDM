@@ -78,7 +78,6 @@ model:
 
 
 data:
-  location: remote # Determines where the data will be downloaded to. Either /mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data or /tmp/data
   already_downloaded: True # Only applies if running locally. If data is downloaded, you can speed things up.
   dataset_name: first_patch_dataset_1.00_spacing/patches #the name of the dataset as it is on S3, under patch_datasets
   target: main.DataModuleFromConfig
@@ -105,7 +104,7 @@ data:
         config:
           root: first_patch_dataset_1.00_spacing/patches
           csv: first_patch_dataset_1.00_spacing/patches.csv
-          split: test #put test here to get the mnist test imgs.
+          split: test
           size: 100
           crop_size: 256
           channels: 3
@@ -128,7 +127,7 @@ lightning:
         save_weights_only: True
   trainer:
     max_epochs: 10
-    skip_validation: True # Determines if the validation loop (calculating FID values) is run or not.
-    skip_test: True #Determines if the testing loop (trainer.test(model, data)) is run or not.
+    skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
+    skip_test: False #Determines if the testing loop (trainer.test(model, data)) is run or not.
     run_name: Attempting to run on aws  #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing
