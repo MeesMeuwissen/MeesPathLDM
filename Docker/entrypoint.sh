@@ -52,7 +52,7 @@ echo "Done."
 export NEPTUNE_API_TOKEN=${NEPTUNE_TOKEN}
 
 # Activate the conda environment.
-source activate ${AIOSYN_CONDA_ENV}
+source activate ldm # Changed from ${AIOSYN_CONDA_ENV}
 
 # Make sure that the right shared objects are loaded.
 source ./preload.sh
