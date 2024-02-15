@@ -13,6 +13,7 @@ submit_batch_job(
     gpu=True,
     account="computing-feature2", #Voor mij is dit 2
     gpus=0,
+    location='remote',
     base='code/generationLDM/configs/latent-diffusion/text_cond/unconditional_aiosyn_data.yaml', #The correct config file
     neptune_mode='async'
 )
