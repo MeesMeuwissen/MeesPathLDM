@@ -90,51 +90,6 @@ class TCGADataset(Dataset):
             "caption": text_prompt,
         }
 
-
-class HandwrittenDigits(Dataset):
-    def __init__(self, config=None):
-        super().__init__()
-        self.cmap = config.get("cmap")
-        self.size = config.get("size")
-        split = config.get("split")
-        if split == "train":
-            trainsplit = True
-        elif split == "test":
-            trainsplit = False
-        else:
-            raise ValueError(f"Dataset split: {split} not supported. Choose from ['train', 'test'].")
-        self.mnist_dataset = MNIST(root="./MNISTdata", train=trainsplit)
-
-        indices = list(range(0, self.size))
-        self.mnist_dataset = Subset(self.mnist_dataset, indices)
-
-        self.transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                lambda x: x.convert("RGB"),
-                transforms.ToTensor(),
-                lambda x: x.permute(1, 2, 0),
-            ]
-        )
-
-    def __len__(self):
-        return len(self.mnist_dataset)
-
-    def __getitem__(self, id):
-        # In this loop, id are simply integers.
-        # transform the image to tensor
-        img = self.transform(self.mnist_dataset[id][0])
-        label = self.mnist_dataset[id][1]
-
-        # Include own created caption
-        caption = f"A handwritten number {label}."
-
-        # HWC should be [256,256,3]
-        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
-
-        return {"image": img, "caption": caption}
-
-
 class KidneyUnconditional(Dataset):
     def __init__(self, config=None):
         self.location = config.get("location")
@@ -181,4 +136,48 @@ class KidneyUnconditional(Dataset):
 
         # should be HWC
         assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
+        return {"image": img, "caption": caption}
+
+
+class HandwrittenDigits(Dataset):
+    def __init__(self, config=None):
+        super().__init__()
+        self.cmap = config.get("cmap")
+        self.size = config.get("size")
+        split = config.get("split")
+        if split == "train":
+            trainsplit = True
+        elif split == "test":
+            trainsplit = False
+        else:
+            raise ValueError(f"Dataset split: {split} not supported. Choose from ['train', 'test'].")
+        self.mnist_dataset = MNIST(root="./MNISTdata", train=trainsplit)
+
+        indices = list(range(0, self.size))
+        self.mnist_dataset = Subset(self.mnist_dataset, indices)
+
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((256, 256)),
+                lambda x: x.convert("RGB"),
+                transforms.ToTensor(),
+                lambda x: x.permute(1, 2, 0),
+            ]
+        )
+
+    def __len__(self):
+        return len(self.mnist_dataset)
+
+    def __getitem__(self, id):
+        # In this loop, id are simply integers.
+        # transform the image to tensor
+        img = self.transform(self.mnist_dataset[id][0])
+        label = self.mnist_dataset[id][1]
+
+        # Include own created caption
+        caption = f"A handwritten number {label}."
+
+        # HWC should be [256,256,3]
+        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
+
         return {"image": img, "caption": caption}
