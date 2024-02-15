@@ -50,7 +50,7 @@ echo "Retrieving Neptune token from secret name/key: $SECRET_NAME / $SECRET_KEY_
 NEPTUNE_TOKEN=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" | python -c "import sys, json; print(json.loads(json.load(sys.stdin)['SecretString'])['$SECRET_KEY_NEPTUNE'])")
 echo "Done."
 export NEPTUNE_API_TOKEN=${NEPTUNE_TOKEN}
-conda info --envs
+
 # Activate the conda environment.
 source activate ${AIOSYN_CONDA_ENV}
 
