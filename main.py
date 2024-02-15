@@ -580,8 +580,6 @@ if __name__ == "__main__":
     taming_dir = os.path.abspath("src/taming-transformers/taming")
     sys.path.append(taming_dir)
 
-    assert False
-
     parser = get_parser()
     # parser = Trainer.add_argparse_args(parser) #Only works with lightning version 1.4
 
