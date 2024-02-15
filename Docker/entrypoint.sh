@@ -50,9 +50,9 @@ echo "Retrieving Neptune token from secret name/key: $SECRET_NAME / $SECRET_KEY_
 NEPTUNE_TOKEN=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" | python -c "import sys, json; print(json.loads(json.load(sys.stdin)['SecretString'])['$SECRET_KEY_NEPTUNE'])")
 echo "Done."
 export NEPTUNE_API_TOKEN=${NEPTUNE_TOKEN}
-
+conda info --envs
 # Activate the conda environment.
-source activate ldm # Changed from ${AIOSYN_CONDA_ENV}
+source activate ${AIOSYN_CONDA_ENV}
 
 # Make sure that the right shared objects are loaded.
 source ./preload.sh
@@ -62,7 +62,6 @@ echo "User: $(whoami)"
 echo "Python: $(which python)"
 echo "Version: $(python --version)"
 echo "Environment: ${CONDA_DEFAULT_ENV}"
-echo "Activated environment: ${AIOSYN_CONDA_ENV}"
 echo "Command: ${*}"
 
 # exec conda run --name="${AIOSYN_CONDA_ENV}" --no-capture-output "${@}"
