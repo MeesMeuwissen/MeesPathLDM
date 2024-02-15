@@ -833,8 +833,10 @@ if __name__ == "__main__":
             except Exception:
                 melk()
                 raise
-        if not trainer_config.skip_test and not trainer.interrupted:
-            trainer.test(model, data)
+        elif not trainer_config.skip_validation:
+            print("Skipped training. Starting validation ... ")
+            trainer.validate(model, data)
+            print("Done validating!")
     except Exception:
         # try:
         #     import pudb as debugger
