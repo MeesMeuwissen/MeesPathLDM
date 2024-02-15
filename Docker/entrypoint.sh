@@ -54,9 +54,6 @@ export NEPTUNE_API_TOKEN=${NEPTUNE_TOKEN}
 # Activate the conda environment.
 source activate ${AIOSYN_CONDA_ENV}
 
-# Make sure that the right shared objects are loaded.
-source ./preload.sh
-
 # Print some basic information for possible debug purposes.
 echo "User: $(whoami)"
 echo "Python: $(which python)"
