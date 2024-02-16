@@ -1545,11 +1545,6 @@ class LatentDiffusion(DDPM):
             samples = self.get_fid_samples(batch)
             self.validation_step_outputs.append(samples)
 
-    def compute_statistics_of_path(self, path):
-        with np.load(path) as f:
-            m, s = f["mu"][:], f["sigma"][:]
-        return m, s
-
     @torch.no_grad()
     def on_validation_epoch_end(self):
         if not self.track_fid:
@@ -1557,16 +1552,18 @@ class LatentDiffusion(DDPM):
         all_samples = np.vstack(self.validation_step_outputs).transpose(0, 2, 3, 1)
 
         if not self.real_stats:
-            uname = os.path.expanduser("~").split("/")[-1]
-            path = self.fid_path or f"/home/{uname}/summer23/tcga_fid/center_crop_real_stats.npz"
-            m1, s1 = self.compute_statistics_of_path(path)
+            # Read the real mu, sigma once
+            path = self.fid_path or Path("FID_outputs/FID_full.npz")
+
+            # read the npz file
+            with np.load(path) as f:
+                m1, s1 = f["mu"], f["sig"]
 
             self.real_stats = [m1, s1]
         else:
             m1, s1 = self.real_stats
 
         m2, s2 = self.calculate_activation_statistics(all_samples)
-        fid = calculate_frechet_distance(m1, s1, m2, s2)
         fid = calculate_frechet_distance(m1, s1, m2, s2)
 
         print("FID", fid)
