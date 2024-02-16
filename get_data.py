@@ -66,10 +66,13 @@ def download_dataset(dataset_name:str, location:str = "local", subsample:bool = 
     assert location in [
         "local",
         "remote",
+        "maclocal",
     ], "Location must be either 'local' or 'remote'. Local means on your laptop, remote on aws."
 
     if location == "local":
         save_location = "/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data"
+    elif location == "maclocal":
+        save_location = "/Users/Mees_1/Master Thesis/Aiosyn/data"
     elif location == "remote":
         save_location = "/tmp/data"
 
@@ -80,3 +83,6 @@ def download_dataset(dataset_name:str, location:str = "local", subsample:bool = 
         save_location=save_location,
         subsample=subsample,
     )
+
+if __name__ == "__main__":
+    download_dataset("first_patch_dataset_1.00_spacing/patches", "maclocal", False)
