@@ -17,6 +17,7 @@ from functools import partial
 from tqdm import tqdm
 from torchvision.utils import make_grid
 from pytorch_lightning.utilities import rank_zero_only
+from pathlib import Path
 
 # from pytorch_lightning.utilities.rank_zero import rank_zero_only
 
@@ -1553,7 +1554,7 @@ class LatentDiffusion(DDPM):
 
         if not self.real_stats:
             # Read the real mu, sigma once
-            path = self.fid_path or Path("FID_outputs/FID_full.npz")
+            path = self.fid_path or Path("generationLDM/FID/FID_outputs/FID_full.npz")
 
             # read the npz file
             with np.load(path) as f:
