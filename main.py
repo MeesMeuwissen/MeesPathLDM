@@ -659,8 +659,14 @@ if __name__ == "__main__":
 
         # model
         print("Attempting to load model ...")
+
+        cwd = os.getcwd()
+        print("Current working directory:", cwd)
+        print("All files in cwd:", os.listdir(cwd))
+        assert False, "Testrun to see cwd"
         model = instantiate_from_config(config.model)
         print("Model loaded.")
+
 
         # trainer and callbacks
         trainer_kwargs = dict()
