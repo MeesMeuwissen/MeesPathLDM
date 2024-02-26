@@ -94,7 +94,6 @@ class TCGADataset(Dataset):
 class KidneyUnconditional(Dataset):
     def __init__(self, config=None):
         self.location = config.get("location")
-        self.data_dir = Path(config.get("root"))
         self.subsample = config.get("subsample")
         if self.location == "local":
             prefix = Path("/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data/")
@@ -103,11 +102,14 @@ class KidneyUnconditional(Dataset):
         else:
             raise ValueError("Wrong location. Please choose either 'local' or 'remote'.")
 
-        self.data_dir = prefix / self.data_dir
+
         if self.subsample:
             self.csv = prefix / config.get("csv").replace("patches.csv", "patches_subsample.csv")
+            self.data_dir = prefix / Path(config.get("root").replace("patches", "patches_subsample"))
+
         else:
             self.csv = prefix / config.get("csv")
+            self.data_dir = prefix / Path(config.get("root"))
 
         self.csv = pandas.read_csv(self.csv)
 
