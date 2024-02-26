@@ -61,7 +61,8 @@ def download_dataset_from_s3(
 def download_dataset(dataset_name:str, location:str = "local", subsample:bool = True) -> None:
     #Example dataset_name: "first_patch_dataset_1.00_spacing/patches"
 
-    set_sso_profile(profile_name="aws-aiosyn-workloads-dev", region_name="eu-west-1")
+    if location == "local" or "maclocal":
+        set_sso_profile(profile_name="aws-aiosyn-workloads-dev", region_name="eu-west-1")
 
     assert location in [
         "local",
