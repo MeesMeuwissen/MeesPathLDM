@@ -576,14 +576,19 @@ if __name__ == "__main__":
     # add cwd for convenience and to make classes in this file available when
     # running as `python main.py`
     # (in particular `main.DataModuleFromConfig`)
-    sys.path.append(os.getcwd())
-    taming_dir = os.path.abspath("generationLDM/src/taming-transformers")
-    sys.path.append(taming_dir)
 
     parser = get_parser()
-    # parser = Trainer.add_argparse_args(parser) #Only works with lightning version 1.4
 
     opt, unknown = parser.parse_known_args()
+
+    sys.path.append(os.getcwd())
+    if opt.location == 'local':
+        taming_dir = os.path.abspath("generationLDM/src/taming-transformers")
+    elif opt.location == 'remote':
+        taming_dir = os.path.abspath("code/generationLDM/src/taming-transformers")
+    else:
+        assert False, "Unknown location"
+    sys.path.append(taming_dir)
 
     # Set Neptune mode, project and API key
     os.environ[

@@ -95,7 +95,7 @@ data:
           split: train
           flip_h: 0.5
           flip_v: 0.5
-          size: 100000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
+          size: 100 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
           crop_size: 256 # size of the images
     validation: #For now, this is the same as the test split...
       target: ldm.data.text_cond.thesis_conditioning.KidneyUnconditional
@@ -114,7 +114,7 @@ lightning:
       params:
         save_weights_only: True
   trainer:
-    max_epochs: 10
+    max_epochs: 3
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
     run_name: Attempting to run on aws  #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing
