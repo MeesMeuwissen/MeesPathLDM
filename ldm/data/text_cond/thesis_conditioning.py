@@ -90,7 +90,57 @@ class TCGADataset(Dataset):
             "caption": text_prompt,
         }
 
+
 class KidneyUnconditional(Dataset):
+    def __init__(self, config=None):
+        self.location = config.get("location")
+        self.data_dir = Path(config.get("root"))
+        if self.location == "local":
+            prefix = Path("/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data/")
+        elif self.location == "remote":
+            prefix = Path("/home/aiosyn/data")
+        else:
+            raise ValueError("Wrong location. Please choose either 'local' or 'remote'.")
+
+        self.data_dir = prefix / self.data_dir
+        self.csv = prefix / config.get("csv")
+        self.csv = pandas.read_csv(self.csv)
+
+        self.slides_list = os.listdir(self.data_dir)
+        self.size = min(config.get("size"), len(self.csv))
+
+        self.crop_size = config.get("crop_size", None)
+        self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
+        self.flip_vertical = config.get("flip_v", 0)
+
+        self.transform = transforms.Compose(
+            [
+                transforms.RandomHorizontalFlip(p=self.flip_horizontal),
+                transforms.RandomVerticalFlip(p=self.flip_vertical),
+                transforms.ToTensor(),
+                lambda x: x.permute(1, 2, 0),
+            ]
+        )
+
+    def __len__(self):
+        return self.size
+
+    def __getitem__(self, idx):
+        caption = ""  # empty caption to simulate unconditional training ?
+
+        img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
+        img_path = os.path.join(self.data_dir, img_path)
+
+        img = Image.open(img_path).convert("RGB")
+
+        img = self.transform(img)
+
+        # should be HWC
+        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
+        return {"image": img, "caption": caption}
+
+
+class KidneyConditional(Dataset):
     def __init__(self, config=None):
         self.location = config.get("location")
         self.data_dir = Path(config.get("root"))
@@ -125,7 +175,7 @@ class KidneyUnconditional(Dataset):
         return self.size
 
     def __getitem__(self, idx):
-        caption = ""  # empty caption to simulate unconditional training ?
+        caption = ""  # TODO: Fix this caption. It should ideally contain information from the slide, such as tissue type and distribution. Example: "H&E stain of a glomerulus, 40% X, 60% Y." These percentages could be obtained with use of Aiosyns models
 
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
         img_path = os.path.join(self.data_dir, img_path)
