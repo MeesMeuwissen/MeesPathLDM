@@ -43,12 +43,15 @@ model:
         transformer_depth: 1
         context_dim: 512
         use_fp16: False # Half precision floats, default is float32
-        ckpt_path: "latent-diffusion/models/ldm/cin256/model.ckpt" #Test with pretrained.
+        ckpt_path: "pretrained/unet/cin256/model.ckpt" #pretrained unet model.
+        #Changing this also means you should change what model is downloaded from S3...
+        #ckpt_path: "latent-diffusion/models/ldm/cin256/model.ckpt" #Test with pretrained.
 
     first_stage_config:
       target: ldm.models.autoencoder.VQModelInterface
       params:
-        ckpt_path: "generation/diffusion/autoencoder/pretrained/model.ckpt" #The autoencoder vq-f4
+        ckpt_path: "pretrained/autoencoder/vq-f4/model.ckpt" #The autoencoder vq-f4
+        #ckpt_path: "generation/diffusion/autoencoder/pretrained/model.ckpt" #The autoencoder vq-f4
         embed_dim: 3
         n_embed: 8192
         ddconfig:

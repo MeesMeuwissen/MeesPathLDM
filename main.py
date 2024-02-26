@@ -14,7 +14,10 @@ from torch import Tensor
 from torch.utils.data import random_split, DataLoader, Dataset, Subset
 from functools import partial
 from PIL import Image
+from aiosynawsmodules.services.sso import set_sso_profile
+from aiosynawsmodules.services.s3 import download_file
 
+from aiosynawsmodules.services.s3 import download_directory
 from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer import Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, Callback, LearningRateMonitor, EarlyStopping
@@ -583,7 +586,7 @@ if __name__ == "__main__":
 
     sys.path.append(os.getcwd())
     if opt.location == 'local':
-        taming_dir = os.path.abspath("generationLDM/src/taming-transformers")
+        taming_dir = os.path.abspath("src/taming-transformers")
     elif opt.location == 'remote':
         taming_dir = os.path.abspath("code/generationLDM/src/taming-transformers")
     else:
@@ -665,12 +668,19 @@ if __name__ == "__main__":
         # model
         print("Attempting to load model ...")
 
-        cwd = os.getcwd()
-        print("Current working directory:", cwd)
-        print("All files in cwd:", os.listdir(cwd))
-        print("All paths in sys.path:")
-        for path in sys.path:
-            print(path)
+        if opt.location == 'remote':
+            print("Running remotely. Downloading pretrained models ...")
+            download_file(
+                remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/autoencoder/vq-f4/model.ckpt",
+                local_path="pretrained/autoencoder/vq-f4/model.ckpt")
+            print("Downloaded autoencoder...")
+            download_file(
+                remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/cin256/model.ckpt",
+                local_path="pretrained/unet/cin256/model.ckpt")
+            print("Downloaded unet. Ready to load.")
+        else:
+            print("Models should already be downloaded.")
+
 
         model = instantiate_from_config(config.model)
         print("Model loaded.")
