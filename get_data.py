@@ -53,7 +53,7 @@ def download_dataset_from_s3(
         with zipfile.ZipFile(file=os.path.join(save_location, dataset_name + ".zip"), mode="r") as f:
             f.extractall(os.path.join(save_location, dataset_name))
         logging.info("Unzipped file {local}".format(local=local_data_path))
-        print("Unzipped files")
+        print("Unzipped files to ")
 
 
 # s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/
@@ -65,8 +65,6 @@ def download_dataset(dataset_name: str, location: str = "local", subsample: bool
         dataset_name: name of the dataset on aws
         location: local or remote
         subsample: whether to only download the subsample of the datasets
-
-    Returns:
 
     '''
     # Example dataset_name: "first_patch_dataset_1.00_spacing/patches"
@@ -86,7 +84,7 @@ def download_dataset(dataset_name: str, location: str = "local", subsample: bool
     elif location == "maclocal":
         save_location = "/Users/Mees_1/Master Thesis/Aiosyn/data"
     elif location == "remote":
-        save_location = "/tmp/data"
+        save_location = "/home/aiosyn/data"
 
     print("Location:", location, "\nSave location:", save_location)
     download_dataset_from_s3(
