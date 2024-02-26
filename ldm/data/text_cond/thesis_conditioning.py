@@ -95,6 +95,7 @@ class KidneyUnconditional(Dataset):
     def __init__(self, config=None):
         self.location = config.get("location")
         self.data_dir = Path(config.get("root"))
+        self.subsample = config.get("subsample")
         if self.location == "local":
             prefix = Path("/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data/")
         elif self.location == "remote":
@@ -103,7 +104,11 @@ class KidneyUnconditional(Dataset):
             raise ValueError("Wrong location. Please choose either 'local' or 'remote'.")
 
         self.data_dir = prefix / self.data_dir
-        self.csv = prefix / config.get("csv")
+        if self.subsample:
+            self.csv = prefix / config.get("csv").replace("patches.csv", "patches_subsample.csv")
+        else:
+            self.csv = prefix / config.get("csv")
+
         self.csv = pandas.read_csv(self.csv)
 
         self.slides_list = os.listdir(self.data_dir)
