@@ -577,7 +577,7 @@ if __name__ == "__main__":
     # running as `python main.py`
     # (in particular `main.DataModuleFromConfig`)
     sys.path.append(os.getcwd())
-    taming_dir = os.path.abspath("src/taming-transformers/taming")
+    taming_dir = os.path.abspath("generationLDM/src/taming-transformers")
     sys.path.append(taming_dir)
 
     parser = get_parser()
@@ -663,10 +663,12 @@ if __name__ == "__main__":
         cwd = os.getcwd()
         print("Current working directory:", cwd)
         print("All files in cwd:", os.listdir(cwd))
-        assert False, "Testrun to see cwd"
+        print("All paths in sys.path:")
+        for path in sys.path:
+            print(path)
+
         model = instantiate_from_config(config.model)
         print("Model loaded.")
-
 
         # trainer and callbacks
         trainer_kwargs = dict()
