@@ -38,8 +38,8 @@ def download_dataset_from_s3(
         # download partition to local
         from aiosynawsmodules.services.s3 import download_file
 
-        print(f"Downloading {dataset_name + '.csv'} from S3 ...")
-        print(f"Downloading {dataset_name + '.zip'} from S3 ... ")
+        print(f"Downloading {dataset_name + '.csv'} from S3 to {local_csv_path} ...")
+        print(f"Downloading {dataset_name + '.zip'} from S3 to {local_data_path} ...")
 
         # download the patch data.
         download_file(remote_path=remote_data_path, local_path=local_data_path, overwrite=True)
@@ -59,6 +59,16 @@ def download_dataset_from_s3(
 # s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/
 
 def download_dataset(dataset_name: str, location: str = "local", subsample: bool = True) -> None:
+    '''
+
+    Args:
+        dataset_name: name of the dataset on aws
+        location: local or remote
+        subsample: whether to only download the subsample of the datasets
+
+    Returns:
+
+    '''
     # Example dataset_name: "first_patch_dataset_1.00_spacing/patches"
 
     if location in ["local", "maclocal"]:
