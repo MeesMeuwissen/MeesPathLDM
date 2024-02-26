@@ -102,15 +102,15 @@ class KidneyUnconditional(Dataset):
         else:
             raise ValueError("Wrong location. Please choose either 'local' or 'remote'.")
 
-
         if self.subsample:
+            print(f"Subsampling, so changing self.csv")
             self.csv = prefix / config.get("csv").replace("patches.csv", "patches_subsample.csv")
             self.data_dir = prefix / Path(config.get("root").replace("patches", "patches_subsample"))
 
         else:
             self.csv = prefix / config.get("csv")
             self.data_dir = prefix / Path(config.get("root"))
-
+        print(f"{self.csv = }")
         self.csv = pandas.read_csv(self.csv)
 
         self.slides_list = os.listdir(self.data_dir)
