@@ -8,7 +8,7 @@ from aiosynawsmodules.services.sso import set_sso_profile
 
 
 def download_dataset_from_s3(
-    dataset_name: str, data_bucket_root: str, save_location: str, subsample: bool = False
+        dataset_name: str, data_bucket_root: str, save_location: str, subsample: bool = False
 ) -> None:
     """Download data from S3 for use during training, validation or testing
 
@@ -58,10 +58,11 @@ def download_dataset_from_s3(
 
 # s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/
 
-def download_dataset(dataset_name:str, location:str = "local", subsample:bool = True) -> None:
-    #Example dataset_name: "first_patch_dataset_1.00_spacing/patches"
+def download_dataset(dataset_name: str, location: str = "local", subsample: bool = True) -> None:
+    # Example dataset_name: "first_patch_dataset_1.00_spacing/patches"
 
     if location == "local" or "maclocal":
+        print(f"Location: {location}. Setting aws profile ...")
         set_sso_profile(profile_name="aws-aiosyn-workloads-dev", region_name="eu-west-1")
 
     assert location in [
@@ -84,6 +85,7 @@ def download_dataset(dataset_name:str, location:str = "local", subsample:bool = 
         save_location=save_location,
         subsample=subsample,
     )
+
 
 if __name__ == "__main__":
     download_dataset("first_patch_dataset_1.00_spacing/patches", "maclocal", False)
