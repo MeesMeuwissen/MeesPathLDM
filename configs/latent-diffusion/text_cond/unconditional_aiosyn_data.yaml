@@ -117,7 +117,7 @@ lightning:
       params:
         save_weights_only: True
   trainer:
-    max_epochs: 3
+    max_epochs: 1
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: Attempting to run on aws  #Name of the run as used by Neptune
+    run_name: Attempting to run on aws, single epoch, 100 datapts  #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing
