@@ -420,6 +420,7 @@ class DDPM(pl.LightningModule):
         if self.use_scheduler:
             lr = self.optimizers().param_groups[0]["lr"]
             print("Logging batch size and some other stuff")
+            lr = lr.astype(np.float32)
             self.log("lr_abs", lr, prog_bar=True, logger=True, on_step=True, on_epoch=False, batch_size=len(batch["image"]))
 
         return loss
@@ -1554,7 +1555,7 @@ class LatentDiffusion(DDPM):
 
         if not self.real_stats:
             # Read the real mu, sigma once
-            path = self.fid_path or Path("generationLDM/FID/FID_outputs/FID_full.npz")
+            path = self.fid_path or Path("FID/FID_outputs/FID_full.npz")
 
             # read the npz file
             with np.load(path) as f:
@@ -1568,7 +1569,7 @@ class LatentDiffusion(DDPM):
         fid = calculate_frechet_distance(m1, s1, m2, s2)
 
         print("FID", fid)
-
+        fid = fid.astype(np.float32) #float32 for mps
         self.log_dict({"FID": fid}, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
     @torch.no_grad()

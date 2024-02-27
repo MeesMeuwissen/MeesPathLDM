@@ -238,7 +238,12 @@ class FrozenCLIPEmbedder(nn.Module):
             self.tokenizer = AutoTokenizer.from_pretrained(version)
             self.clip_max_length = 77
         self.transformer = CLIPTextModel.from_pretrained(version)
-        self.device = device
+        if torch.cuda.is_available():
+            self.device = "cuda"
+        elif torch.backends.mps.is_available():
+            self.device = "mps"
+        else:
+            self.device = "cpu"
         self.max_length = self.clip_max_length * math.ceil(
             max_length / self.clip_max_length
         )
