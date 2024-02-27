@@ -778,7 +778,7 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=1,
             logger=neptune_logger,
-            callbacks=[ThesisCallback(), CUDACallback()],
+            callbacks=[ThesisCallback()],
             log_every_n_steps=1,
         )
         trainer.logdir = logdir  ###
