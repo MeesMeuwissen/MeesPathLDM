@@ -84,7 +84,7 @@ data:
   already_downloaded: True # Only applies if running locally. If data is downloaded, you can speed things up.
   dataset_name: first_patch_dataset_1.00_spacing/patches #the name of the dataset as it is on S3, under patch_datasets
   target: main.DataModuleFromConfig
-  subsample: False
+  subsample: True
   params:
     batch_size: 16
     num_workers: 12
