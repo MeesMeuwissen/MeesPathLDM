@@ -84,7 +84,6 @@ data:
   already_downloaded: True # Only applies if running locally. If data is downloaded, you can speed things up.
   dataset_name: first_patch_dataset_1.00_spacing/patches #the name of the dataset as it is on S3, under patch_datasets
   target: main.DataModuleFromConfig
-  subsample: True
   params:
     batch_size: 16
     num_workers: 12
@@ -93,6 +92,7 @@ data:
       target: ldm.data.text_cond.thesis_conditioning.KidneyUnconditional
       params:
         config:
+          subsample: True
           root: first_patch_dataset_1.00_spacing/patches #start without / !
           csv: first_patch_dataset_1.00_spacing/patches.csv
           split: train
@@ -119,5 +119,5 @@ lightning:
   trainer:
     max_epochs: 1
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: Attempting to run on aws, single epoch, 100 datapts  #Name of the run as used by Neptune
+    run_name: Attempt to run on aws with subsample.  #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing
