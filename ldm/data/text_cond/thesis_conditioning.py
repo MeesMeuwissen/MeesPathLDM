@@ -136,7 +136,7 @@ class KidneyUnconditional(Dataset):
         return self.size
 
     def __getitem__(self, idx):
-        caption = ""  # empty caption to simulate unconditional training ?
+        caption = "A H&E stained slide of a piece of kidney tissue"  # Generic caption
 
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
         img_path = os.path.join(self.data_dir, img_path)
