@@ -9,9 +9,9 @@ logging.basicConfig(level=logging.INFO)
 submit_batch_job(
     name="generation_train",
     script_path= "generationLDM/main.py", #The script to be executed
-    timeout_min=60 * 20,
+    timeout_min=60 * 20, #Time in minutes
     gpu=True,
-    account="computing-feature2", #Voor mij is dit 2
+    account="computing-feature2", #For me, this is 2
     gpus=0,
     location='remote',
     base='code/generationLDM/configs/latent-diffusion/text_cond/unconditional_aiosyn_data.yaml', #The correct config file

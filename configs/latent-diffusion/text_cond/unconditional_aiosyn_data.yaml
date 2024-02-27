@@ -51,7 +51,6 @@ model:
       target: ldm.models.autoencoder.VQModelInterface
       params:
         ckpt_path: "pretrained/autoencoder/vq-f4/model.ckpt" #The autoencoder vq-f4
-        #ckpt_path: "generation/diffusion/autoencoder/pretrained/model.ckpt" #The autoencoder vq-f4
         embed_dim: 3
         n_embed: 8192
         ddconfig:
@@ -117,7 +116,7 @@ lightning:
       params:
         save_weights_only: True
   trainer:
-    max_epochs: 1
+    max_epochs: 3
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: Attempt to run on aws with subsample.  #Name of the run as used by Neptune
+    run_name: Run on aws from macOS, 3 epochs  #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing
