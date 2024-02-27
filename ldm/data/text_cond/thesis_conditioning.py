@@ -110,7 +110,6 @@ class KidneyUnconditional(Dataset):
         else:
             self.csv = prefix / config.get("csv")
             self.data_dir = prefix / Path(config.get("root"))
-        print(f"{self.csv = }")
         self.csv = pandas.read_csv(self.csv)
 
         self.slides_list = os.listdir(self.data_dir)
