@@ -585,7 +585,7 @@ if __name__ == "__main__":
     opt, unknown = parser.parse_known_args()
 
     sys.path.append(os.getcwd())
-    if opt.location == 'local':
+    if opt.location in ['local', 'maclocal']:
         taming_dir = os.path.abspath("src/taming-transformers")
     elif opt.location == 'remote':
         taming_dir = os.path.abspath("code/generationLDM/src/taming-transformers")
@@ -772,7 +772,6 @@ if __name__ == "__main__":
         neptune_logger.log_hyperparams(params=config)
         neptune_logger.log_hyperparams(params=trainer_config)
 
-        print(f"Trainer config skip_validation: {trainer_config.skip_validation}")
         print(f"Max epochs: {trainer_config.max_epochs}")
         trainer = Trainer(
             max_epochs=trainer_config.max_epochs,
@@ -784,11 +783,11 @@ if __name__ == "__main__":
         )
         trainer.logdir = logdir  ###
         config.data['location'] = opt.location
-        assert config.data.location in ["local", "remote"], "Data location should be 'local' or 'remote'"
+        assert config.data.location in ["local", "remote", "maclocal"], "Data location should be 'local', 'maclocal, or 'remote'"
         # Add location to the data config params
         config.data["params"]["location"] = config.data.location
-        if config.data.location == "local" and config.data.already_downloaded == True:
-            print("Data already downloaded, skipping download...")
+        if config.data.location in ["local", "maclocal"] and config.data.already_downloaded == True:
+            print("Data already downloaded, skipping download ...")
         else:
             download_dataset(dataset_name=config.data.dataset_name, location=config.data.location, subsample=config.data.params.train.params.config.subsample)
         # data
@@ -844,7 +843,6 @@ if __name__ == "__main__":
 
         signal.signal(signal.SIGUSR1, melk)
         signal.signal(signal.SIGUSR2, divein)
-
         # run
         if opt.train:
             try:

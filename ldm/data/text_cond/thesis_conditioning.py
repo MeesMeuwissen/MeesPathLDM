@@ -90,6 +90,8 @@ class TCGADataset(Dataset):
             "caption": text_prompt,
         }
 
+def permute_channels(x):
+    return x.permute(1, 2, 0).contiguous()
 
 class KidneyUnconditional(Dataset):
     def __init__(self, config=None):
@@ -97,6 +99,8 @@ class KidneyUnconditional(Dataset):
         self.subsample = config.get("subsample")
         if self.location == "local":
             prefix = Path("/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data/")
+        elif self.location == "maclocal":
+            prefix = Path("/Users/Mees_1/MasterThesis/Aiosyn/data/")
         elif self.location == "remote":
             prefix = Path("/home/aiosyn/data")
         else:
@@ -119,12 +123,13 @@ class KidneyUnconditional(Dataset):
         self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
         self.flip_vertical = config.get("flip_v", 0)
 
+
         self.transform = transforms.Compose(
             [
                 transforms.RandomHorizontalFlip(p=self.flip_horizontal),
                 transforms.RandomVerticalFlip(p=self.flip_vertical),
                 transforms.ToTensor(),
-                lambda x: x.permute(1, 2, 0),
+                transforms.Lambda(permute_channels),
             ]
         )
 
@@ -168,12 +173,13 @@ class KidneyConditional(Dataset):
         self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
         self.flip_vertical = config.get("flip_v", 0)
 
+
         self.transform = transforms.Compose(
             [
                 transforms.RandomHorizontalFlip(p=self.flip_horizontal),
                 transforms.RandomVerticalFlip(p=self.flip_vertical),
                 transforms.ToTensor(),
-                lambda x: x.permute(1, 2, 0),
+                transforms.Lambda(permute_channels),
             ]
         )
 
