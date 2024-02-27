@@ -796,21 +796,6 @@ if __name__ == "__main__":
         # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
         # calling these ourselves should not be necessary but it is.
         # lightning still takes care of proper multiprocessing though
-        if opt.location == "remote":
-            directory_path = '/home/aiosyn/data'
-
-            # Walk through the directory and its subdirectories
-            for root, dirs, files in os.walk(directory_path):
-                # Print the current directory
-                print(f'Current directory: {root}')
-
-                # Print all files in the current directory
-                for file in files:
-                    print(f'File: {os.path.join(root, file)}')
-
-                # Print all directories in the current directory (if needed)
-                # for directory in dirs:
-                #     print(f'Directory: {os.path.join(root, directory)}')
         data.prepare_data()
         data.setup()
         print("#### Data #####")
