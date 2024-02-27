@@ -790,7 +790,7 @@ if __name__ == "__main__":
         if config.data.location == "local" and config.data.already_downloaded == True:
             print("Data already downloaded, skipping download...")
         else:
-            download_dataset(dataset_name=config.data.dataset_name, location=config.data.location, subsample=config.data.subsample)
+            download_dataset(dataset_name=config.data.dataset_name, location=config.data.location, subsample=config.data.params.train.params.config.subsample)
         # data
         data = instantiate_from_config(config.data)
         # NOTE according to https://pytorch-lightning.readthedocs.io/en/latest/datamodules.html
