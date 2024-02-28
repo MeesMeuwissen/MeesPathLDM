@@ -5,7 +5,7 @@ https://github.com/openai/improved-diffusion/blob/e94489283bb876ac1477d5dd7709bb
 https://github.com/CompVis/taming-transformers
 -- merci
 """
-import os
+import os, sys
 import torch
 import torch.nn as nn
 import numpy as np
@@ -1563,12 +1563,12 @@ class LatentDiffusion(DDPM):
                 with np.load(path) as f:
                     m1, s1 = f["mu"], f["sig"]
             except FileNotFoundError: #Ncessary on aws
-                print(f"FID not found. Trying \"generationLDM/FID_outputs/FID_full.npz\"")
+                print(f"FID not found. Trying \"code/generationLDM/FID_outputs/FID_full.npz\"")
                 print(f"{os.getcwd() = }")
                 print("All dirs in path: ")
                 for dir in sys.path:
                     print(f"{dir}")
-                with np.load(Path("generationLDM/FID_outputs/FID_full.npz")) as f:
+                with np.load(Path("code/generationLDM/FID_outputs/FID_full.npz")) as f:
                     m1, s1 = f["mu"], f["sig"]
                 print("Loaded mu, sig.")
             self.real_stats = [m1, s1]
