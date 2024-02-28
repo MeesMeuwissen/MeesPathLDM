@@ -1562,13 +1562,8 @@ class LatentDiffusion(DDPM):
             try:
                 with np.load(path) as f:
                     m1, s1 = f["mu"], f["sig"]
-            except FileNotFoundError: #Ncessary on aws
-                print(f"FID not found. Trying \"code/generationLDM/FID_outputs/FID_full.npz\"")
-                print(f"{os.getcwd() = }")
-                print("All dirs in path: ")
-                for dir in sys.path:
-                    print(f"{dir}")
-                with np.load(Path("code/generationLDM/FID_outputs/FID_full.npz")) as f:
+            except FileNotFoundError: #Necessary on aws
+                with np.load(Path("/home/aiosyn/code/generationLDM/FID/FID_outputs/FID_full.npz")) as f:
                     m1, s1 = f["mu"], f["sig"]
                 print("Loaded mu, sig.")
             self.real_stats = [m1, s1]

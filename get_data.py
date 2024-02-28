@@ -53,7 +53,7 @@ def download_dataset_from_s3(
         with zipfile.ZipFile(file=os.path.join(save_location, dataset_name + ".zip"), mode="r") as f:
             f.extractall(os.path.join(save_location, dataset_name))
         logging.info("Unzipped file {local}".format(local=local_data_path))
-        print("Unzipped files to ")
+        print(f"Unzipped files {local_data_path}")
 
 
 # s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/
@@ -87,11 +87,18 @@ def download_dataset(dataset_name: str, location: str = "local", subsample: bool
         save_location = "/home/aiosyn/data"
 
     print("Location:", location, "\nSave location:", save_location)
+    print("Downloading data, both full and subsample ...")
     download_dataset_from_s3(
         dataset_name=dataset_name,
         data_bucket_root="s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/",
         save_location=save_location,
-        subsample=subsample,
+        subsample=True,
+    )
+    download_dataset_from_s3(
+        dataset_name=dataset_name,
+        data_bucket_root="s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/",
+        save_location=save_location,
+        subsample=False,
     )
 
 
