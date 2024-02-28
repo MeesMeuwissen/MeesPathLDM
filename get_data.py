@@ -82,7 +82,7 @@ def download_dataset(dataset_name: str, location: str = "local", subsample: bool
     if location == "local":
         save_location = "/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data"
     elif location == "maclocal":
-        save_location = "/Users/Mees_1/Master Thesis/Aiosyn/data"
+        save_location = "/Users/Mees_1/MasterThesis/Aiosyn/data"
     elif location == "remote":
         save_location = "/home/aiosyn/data"
 
