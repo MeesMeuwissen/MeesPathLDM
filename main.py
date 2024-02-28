@@ -506,8 +506,8 @@ class ThesisCallback(Callback):
     def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         print("THESISCALLBACK: Training is starting...")
 
-        # Log the neptune mode to the run as metadata
-        trainer.logger.experiment["Neptune Mode"] = opt.neptune_mode
+        # Log the run location to metadata directly
+        trainer.logger.experiment["Location"] = opt.location
 
     def on_train_end(self, trainer, pl_module):
         print("Training completed.")
