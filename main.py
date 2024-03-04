@@ -501,7 +501,7 @@ class ThesisCallback(Callback):
     def on_train_batch_end(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
     ) -> None:
-        trainer.logger.log_metrics({"train/loss": outputs["loss"]}, step=trainer.global_step)
+        trainer.logger.log_metrics({"train/Loss": outputs["loss"]}, step=trainer.global_step)
 
     def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         print("THESISCALLBACK: Training is starting...")
@@ -530,6 +530,15 @@ class ThesisCallback(Callback):
         # print(f"Starting epoch {trainer.current_epoch}. ")
         pass
 
+    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        print("Starting validation ...")
+
+    def on_validation_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        pass
+        # samples = trainer.model.validation_step_outputs[0] #A batch of 8 imgs I think, it has shape (8,3,256,256), dtype uint8)
+        #
+        # for index, sample in samples:
+        #     trainer.logger.experiment[f"validation_samples/epoch_{trainer.current_epoch}/{trainer.global_step}/{index}"].append(sample, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
 
 if __name__ == "__main__":
     # custom parser to specify config files, train, test and debug mode,
@@ -601,7 +610,7 @@ if __name__ == "__main__":
     os.environ["NEPTUNE_MODE"] = opt.neptune_mode
 
     os.environ["PYTHONUNBUFFERED"] = "1"
-    print(f"Setting Neptune mode to {opt.neptune_mode}")
+
     if opt.name and opt.resume:
         raise ValueError(
             "-n/--name and -r/--resume cannot be specified both."
@@ -717,18 +726,11 @@ if __name__ == "__main__":
                 "save_last": True,
             },
         }
-        if hasattr(model, "monitor"):
-            print(f"Monitoring {model.monitor} as checkpoint metric.")
-            default_modelckpt_cfg["params"]["monitor"] = model.monitor
-            default_modelckpt_cfg["params"]["save_top_k"] = 3
-
         if "modelcheckpoint" in lightning_config:
             modelckpt_cfg = lightning_config.modelcheckpoint
         else:
             modelckpt_cfg = OmegaConf.create()
         modelckpt_cfg = OmegaConf.merge(default_modelckpt_cfg, modelckpt_cfg)
-        if version.parse(pl.__version__) < version.parse("1.4.0"):
-            trainer_kwargs["checkpoint_callback"] = instantiate_from_config(modelckpt_cfg)
 
         # add callback which sets up log directory
         default_callbacks_cfg = {
@@ -761,6 +763,9 @@ if __name__ == "__main__":
 
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
 
+        print(f"Monitoring {model.monitor} for checkpoint metric.")
+        checkpoint_callback = ModelCheckpoint(dirpath=logdir, save_top_k=1, save_last=True, monitor=model.monitor, save_weights_only=True)
+
         # define my own trainer:
         neptune_logger = NeptuneLogger(
             api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
@@ -778,11 +783,11 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=1,
             logger=neptune_logger,
-            callbacks=[ThesisCallback()],
-            log_every_n_steps=1,
+            callbacks=[ThesisCallback(), checkpoint_callback],
         )
         trainer.logdir = logdir  ###
         config.data['location'] = opt.location
+        trainer.logger.experiment["Location"] = opt.location
         assert config.data.location in ["local", "remote", "maclocal"], "Data location should be 'local', 'maclocal, or 'remote'"
         # Add location to the data config params
         config.data["params"]["location"] = config.data.location
@@ -846,7 +851,7 @@ if __name__ == "__main__":
         # run
         if opt.train:
             try:
-                with torch.autocast(device_type="cuda"):  # This apparently solves everything
+                with torch.autocast(device_type="cuda" if torch.cuda.is_available() else "cpu"):  # This apparently solves everything
                     if trainer_config.skip_validation:
                         # Only perform the training, no FID computation.
                         trainer.fit(model, data, val_dataloaders=None)
@@ -857,9 +862,10 @@ if __name__ == "__main__":
                 melk()
                 raise
         elif not trainer_config.skip_validation:
-            print("Skipped training. Starting validation ... ")
-            trainer.validate(model, data)
+            print("Skipped training. Starting test ... ")
+            trainer.test(model, data)
             print("Done validating!")
+
     except Exception:
         # try:
         #     import pudb as debugger
