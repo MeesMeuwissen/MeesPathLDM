@@ -18,7 +18,8 @@ model:
     conditioning_key: crossattn
     monitor: val/loss
     use_ema: False
-    ckpt_path: "pretrained/srikar/epoch_3-001.ckpt" #pretrained unet model v2 (used by Srikar)
+    ckpt_path: "/home/aiosyn/code/generationLDM/pretrained/srikar/epoch_3-001.ckpt" #pretrained unet model v2 (used by Srikar)
+
     #changing this also means you should change what model is downloaded from S3...
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
