@@ -18,6 +18,9 @@ model:
     conditioning_key: crossattn
     monitor: val/loss
     use_ema: False
+    ckpt_path: "pretrained/unet/cin256/model.ckpt" #pretrained unet model.
+    #Changing this also means you should change what model is downloaded from S3...
+    #ckpt_path: "latent-diffusion/models/ldm/cin256/model.ckpt" #Test with pretrained.
 
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
@@ -43,9 +46,6 @@ model:
         transformer_depth: 1
         context_dim: 512
         use_fp16: False # Half precision floats, default is float32
-        ckpt_path: "pretrained/unet/cin256/model.ckpt" #pretrained unet model.
-        #Changing this also means you should change what model is downloaded from S3...
-        #ckpt_path: "latent-diffusion/models/ldm/cin256/model.ckpt" #Test with pretrained.
 
     first_stage_config:
       target: ldm.models.autoencoder.VQModelInterface
@@ -118,5 +118,5 @@ lightning:
   trainer:
     max_epochs: 3
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: Run on aws from macOS, 3 epochs, no subsample  #Name of the run as used by Neptune
+    run_name: Correctly loading the model before training. No synthetic sample logging yet.  #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing
