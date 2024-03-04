@@ -764,7 +764,7 @@ if __name__ == "__main__":
         trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
 
         print(f"Monitoring {model.monitor} for checkpoint metric.")
-        checkpoint_callback = ModelCheckpoint(dirpath=logdir, save_top_k=1, save_last=True, monitor=model.monitor, save_weights_only=True)
+        checkpoint_callback = ModelCheckpoint(dirpath=logdir, save_top_k=2, save_last=True, monitor=model.monitor, save_weights_only=True)
 
         # define my own trainer:
         neptune_logger = NeptuneLogger(
