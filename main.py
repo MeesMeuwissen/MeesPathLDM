@@ -679,13 +679,10 @@ if __name__ == "__main__":
 
         if opt.location == 'remote':
             print("Running remotely. Downloading pretrained models ...")
+
             download_file(
-                remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/autoencoder/vq-f4/model.ckpt",
-                local_path="pretrained/autoencoder/vq-f4/model.ckpt")
-            print("Downloaded autoencoder...")
-            download_file(
-                remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/cin256/model.ckpt",
-                local_path="pretrained/unet/cin256/model.ckpt")
+                remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt",
+                local_path="/home/aiosyn/code/generationLDM/pretrained/srikar/epoch_3-001.ckpt")
             print("Downloaded unet. Ready to load.")
         else:
             print("Models should already be downloaded.")
