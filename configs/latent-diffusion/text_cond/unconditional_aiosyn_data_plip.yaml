@@ -74,7 +74,8 @@ model:
       params:
         # plip is the pathology clip model
         # plip- model: vinid/plip
-        version: "openai/clip-vit-base-patch32" # regular clip as used by Srikar
+        # "openai/clip-vit-base-patch32" # regular clip as used by Srikar
+        version: "vinid/plip" # plip
         max_length: 154
 
 
@@ -115,7 +116,7 @@ lightning:
       params:
         save_weights_only: True
   trainer:
-    max_epochs: 10
+    max_epochs: 5
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: Correctly loading the model before training. No synthetic sample logging yet.  #Name of the run as used by Neptune
+    run_name: PLIP with correct model loading.   #Name of the run as used by Neptune
     log_model_checkpoints: True # Tells Neptune to log the model ckpts or not. Turn off for testing

@@ -15,6 +15,7 @@ submit_batch_job(
     gpus=0,
     location='remote',
     train=True,
-    base='code/generationLDM/configs/latent-diffusion/text_cond/unconditional_aiosyn_data.yaml', #The correct config file
+    n_attempts=3,
+    base='code/generationLDM/configs/latent-diffusion/text_cond/unconditional_aiosyn_data_plip.yaml', #The correct config file
     neptune_mode='async'
 )
