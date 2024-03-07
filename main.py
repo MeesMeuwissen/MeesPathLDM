@@ -494,7 +494,7 @@ if __name__ == "__main__":
 
             download_file(
                 remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt",
-                local_path="attempting_to_download_model_test",
+                local_path="/home/aiosyn/code/generationLDM/pretrained/srikar/epoch_3-001.ckpt",
             )
             print("Downloaded unet. Ready to load.")
         else:
