@@ -1573,7 +1573,7 @@ class LatentDiffusion(DDPM):
 
         print("FID", fid)
         fid = fid.astype(np.float32) #float32 for mps
-        self.log_dict({"FID": fid}, prog_bar=False, logger=True, on_step=False, on_epoch=True)
+        self.log_dict({"FID": fid, "Nr of samples for FID": len(all_samples)}, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
     @torch.no_grad()
     def get_fid_samples(self, batch):
