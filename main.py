@@ -324,7 +324,7 @@ class ThesisCallback(Callback):
         print(f"Finished the epoch, global step:{trainer.global_step}. Syncing logdir ...")
 
         #Sync the whole logdirectory with aws, so upload it and overwrite is ok
-        set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
+        set_sso_profile("aws-aiosyn-workloads-dev", region_name="eu-west-1")
         upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}", overwrite=True)
         print("Done syncing logdir.")
 
