@@ -114,7 +114,10 @@ def main():
 
     now = datetime.now()
     formatted_now = now.strftime("%m-%d_%H%M")
-    output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}_size={size}"
+    if opt.location == 'maclocal':
+        output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}_size={size}"
+    elif opt.location == 'remote':
+        output_dir =f"/home/aiosyn/data/generated_samples/{formatted_now}_size={size}"
     os.makedirs(output_dir, exist_ok=True)
 
     model = get_model(config_path, device, ckpt_path)
