@@ -119,8 +119,14 @@ def main():
     elif opt.location == 'remote':
         output_dir =f"/home/aiosyn/data/generated_samples/{formatted_now}_size={size}"
     os.makedirs(output_dir, exist_ok=True)
+    try:
+        model = get_model(config_path, device, ckpt_path)
+    except FileNotFoundError:
+        print("Wrong path. Printing all paths in sys.path: ")
+        for path in sys.path:
+            print(path)
+        model = get_model('code' + config_path, device, 'code' + ckpt_path)
 
-    model = get_model(config_path, device, ckpt_path)
     print(f"Generating {nr_of_samples} synthetic images of size {size} ...")
     print(f"Saving to {output_dir} ... ")
     for i in tqdm(range(nr_of_samples // batch_size + 1)):
@@ -161,9 +167,10 @@ if __name__ == "__main__":
 
     opt, unknown = parser.parse_known_args()
     add_taming_lib(opt.location)
-
+    print(f"{opt.location = }")
     if opt.location == "remote":
         # Model will be downloaded to pretrained/srikar/epoch_3-001.ckpt (see download_model())
+        print("Downloading model ...")
         model_path = "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
         download_model(model_path)
 
