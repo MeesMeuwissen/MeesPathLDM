@@ -107,7 +107,7 @@ def main():
     summary = "A H&E stained slide of a piece of kidney tissue"
     tumor_desc = "High tumor; low TIL;"  # What to do with this??
 
-    nr_of_samples = 100  # Nr of samples to generate
+    nr_of_samples = 10  # Nr of samples to generate
     depth_of_sampling = 50  # Steps in the sampling process
     batch_size = 4 # 256 with batch size 4 crashes aws (out of memory)
     shape = [3, size, size]
@@ -133,11 +133,12 @@ def main():
 
     if save_to_s3 or opt.location == 'remote':
         print(f"Saving samples in {output_dir} to S3 ...")
-        set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
+        #set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
         upload_directory(
             output_dir,
             f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={size}/",
         )
+
 
 
 def add_taming_lib(loc):
