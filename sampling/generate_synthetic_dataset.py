@@ -103,13 +103,13 @@ def main():
     ckpt_path = "generationLDM/pretrained/srikar/epoch_3-001.ckpt"
     save_to_s3 = True
 
-    size = 256
+    size = 128
     summary = "A H&E stained slide of a piece of kidney tissue"
     tumor_desc = "High tumor; low TIL;"  # What to do with this??
 
     nr_of_samples = 100  # Nr of samples to generate
     depth_of_sampling = 50  # Steps in the sampling process
-    batch_size = 4 # 256 with batch size 8 crashes aws (out of memory)
+    batch_size = 4 # 256 with batch size 4 crashes aws (out of memory)
     shape = [3, size, size]
 
     now = datetime.now()
