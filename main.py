@@ -326,7 +326,8 @@ class ThesisCallback(Callback):
         #Sync the whole logdirectory with aws, so upload it and overwrite is ok
         if opt.location != 'remote':
             set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
-        upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}", overwrite=True)
+        run_id = trainer.logger.experiment["sys/id"].fetch()
+        upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}-{run_id}", overwrite=True)
         print("Done syncing logdir.")
 
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
