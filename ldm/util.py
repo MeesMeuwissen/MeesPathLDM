@@ -42,6 +42,7 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
         ax.axis('off')  # Hide axis
 
     trainer.logger.experiment[f"batch_samples/{split}/epoch_{trainer.current_epoch}/{batch_idx}"].append(fig, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
+    plt.close(fig)
 
 def log_txt_as_img(wh, xc, size=10):
     # wh a tuple of (width, height)
