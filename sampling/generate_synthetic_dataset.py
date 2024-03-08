@@ -103,28 +103,28 @@ def main():
     ckpt_path = "generationLDM/pretrained/srikar/epoch_3-001.ckpt"
     save_to_s3 = True
 
-    size = 128
+    size = 64 # Remember that the autoencoder upscales them by 4x!
     summary = "A H&E stained slide of a piece of kidney tissue"
     tumor_desc = "High tumor; low TIL;"  # What to do with this??
 
-    nr_of_samples = 10  # Nr of samples to generate
+    nr_of_samples = 1500  # Nr of samples to generate
     depth_of_sampling = 50  # Steps in the sampling process
-    batch_size = 4 # 256 with batch size 4 crashes aws (out of memory)
+    batch_size = 8 # 256 with batch size 4 crashes aws (out of memory)
     shape = [3, size, size]
 
     now = datetime.now()
     formatted_now = now.strftime("%m-%d_%H%M")
     if opt.location == 'maclocal':
-        output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}_size={size}"
+        output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
     elif opt.location == 'remote':
-        output_dir =f"/home/aiosyn/data/generated_samples/{formatted_now}_size={size}"
+        output_dir =f"/home/aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
     os.makedirs(output_dir, exist_ok=True)
     try:
         model = get_model(config_path, device, ckpt_path)
     except FileNotFoundError:
         model = get_model('code/' + config_path, device, 'code/' + ckpt_path)
 
-    print(f"Generating {nr_of_samples} synthetic images of size {size} ...")
+    print(f"Generating {nr_of_samples} synthetic images of size {4*size} ...")
     print(f"Saving to {output_dir} ... ")
     for i in tqdm(range(nr_of_samples // batch_size + 1)):
         samples = get_samples(model, shape, batch_size, depth_of_sampling, summary, tumor_desc)
@@ -145,7 +145,7 @@ def main():
         #set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
         upload_directory(
             output_dir,
-            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={size}/",
+            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/",
         )
 
 
