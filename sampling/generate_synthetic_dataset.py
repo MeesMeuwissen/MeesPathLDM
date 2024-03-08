@@ -134,6 +134,7 @@ def main():
     #save some metadata to a file in output dir as well.
 
     with open(output_dir + '/metadata.txt', 'w') as f:
+        f.write(f"Model path used: {ckpt_path}")
         f.write(f"Depth of sampling: {depth_of_sampling}")
         f.write(f"Number of samples: {nr_of_samples}")
         f.write(f"Batch size: {batch_size}")
