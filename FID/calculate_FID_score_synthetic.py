@@ -23,11 +23,16 @@ def get_device():
 def main():
     device = get_device()
     local_dir = "/home/aiosyn/data/synthetic"
-    data_path = f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/03-08_1448-size=256/"  # Copy and paste S3 url here
+    data_path = "s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/03-08_1448-size=256"
     real_FID_path = "s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/real_activation_stats /FID_full.npz"  # Keep the space after stats !
 
     print("Downloading files ...")
-    download_directory(data_path, local_dir)
+    download_directory(
+        remote_s3_url=data_path,
+        local_dir=local_dir,
+        overwrite=True,
+        recursive=True,
+        )
     download_file(real_FID_path, "/home/aiosyn/FID_real.npz")
     # Get list of all img paths
 
