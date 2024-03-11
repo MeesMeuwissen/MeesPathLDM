@@ -197,6 +197,6 @@ if __name__ == "__main__":
     size = 64  # Remember that the autoencoder upscales them by 4x!
     summary = "A H&E stained slide of a piece of kidney tissue"
     tumor_desc = "High tumor; low TIL;"  # What to do with this??
-    nr_of_samples = 100 #default is 1500
+    nr_of_samples = 1500 #default is 1500
 
     main(size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples)
