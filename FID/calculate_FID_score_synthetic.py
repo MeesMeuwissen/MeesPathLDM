@@ -59,9 +59,9 @@ def main():
 
     np.savez(f"/home/aiosyn/activation_statistics.npz", mu=mu_fake, sig=sig_fake)
     upload_file(
-        f"/home/aiosyn/activation_statistics.npz", data_path + "activation_statistics.npz"
+        f"/home/aiosyn/activation_statistics.npz", data_path + "/activation_statistics.npz"
     )
-    upload_file("/home/aiosyn/data/synthetic/metadata.txt", data_path + "metadata.txt", overwrite=True)
+    upload_file("/home/aiosyn/data/synthetic/metadata.txt", data_path + "/metadata.txt", overwrite=True)
     print(f"Uploaded outputs to S3")
 
 
