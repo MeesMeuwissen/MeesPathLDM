@@ -100,7 +100,7 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main():
+def main(size, summary, tumor_desc, nr_of_samples=1500):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     )
@@ -108,11 +108,6 @@ def main():
     ckpt_path = "generationLDM/pretrained/srikar/epoch_3-001.ckpt"
     save_to_s3 = True
 
-    size = 64  # Remember that the autoencoder upscales them by 4x!
-    summary = "A H&E stained slide of a piece of kidney tissue"
-    tumor_desc = "High tumor; low TIL;"  # What to do with this??
-
-    nr_of_samples = 1500  # Nr of samples to generate
     depth_of_sampling = 50  # Steps in the sampling process
     batch_size = 8  # 256 with batch size 4 crashes aws (out of memory)
     shape = [3, size, size]
@@ -199,4 +194,9 @@ if __name__ == "__main__":
         model_path = "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
         download_model(model_path)
 
-    main()
+    size = 64  # Remember that the autoencoder upscales them by 4x!
+    summary = "A H&E stained slide of a piece of kidney tissue"
+    tumor_desc = "High tumor; low TIL;"  # What to do with this??
+    nr_of_samples = 1500 #default is 1500
+
+    main(size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples)
