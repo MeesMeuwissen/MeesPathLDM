@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     def get_conditional_token(batch_size, summary):
         # append tumor and TIL probability to the summary
-        tumor = ["High tumor; low TIL;"] * (batch_size) #Keep this
+        tumor = ["low tumor; low TIL;"] * (batch_size) #Keep this
         return [t + summary for t in tumor]
 
     batch_size = 4 #keep low, otherwise I run out of RAM :( Especially for larger imgs
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
         print("Starting sampling for sampler 1 ...")
         samples_ddim, _ = sampler1.sample(
-            5,
+            50,
             batch_size,
             shape,
             cc,
