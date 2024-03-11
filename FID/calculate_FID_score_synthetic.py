@@ -1,7 +1,7 @@
 import glob
 
 from pathlib import Path
-
+import os
 import numpy as np
 import torch
 from pytorch_fid.fid_score import calculate_activation_statistics, calculate_frechet_distance
@@ -30,7 +30,12 @@ def main():
     download_directory(data_path, local_dir)
     download_file(real_FID_path, "/home/aiosyn/FID_real.npz")
     # Get list of all img paths
-    img_paths = glob.glob("/home/aiosyn/data/synthetic/*.png")
+
+    img_paths = glob.glob(local_dir + "/*.png")
+    try:
+        print("5 elements in local_dir:", os.listdir(local_dir)[:5])
+    except Exception:
+        pass
     print(f"Calculating FID of {len(img_paths)} images ... ")
 
     model = InceptionV3().to(device)
