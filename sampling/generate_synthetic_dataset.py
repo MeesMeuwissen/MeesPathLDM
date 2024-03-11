@@ -3,6 +3,8 @@ import os
 import sys
 import uuid
 from datetime import datetime
+import numpy as np
+from pathlib import Path
 
 import torch
 from ldm.models.diffusion.ddim import DDIMSampler
@@ -10,6 +12,8 @@ from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
 from torchvision import transforms
 from tqdm import tqdm
+from pytorch_fid.fid_score import calculate_activation_statistics, calculate_frechet_distance
+from pytorch_fid.inception import InceptionV3
 
 from aiosynawsmodules.services.s3 import upload_directory, download_file
 from aiosynawsmodules.services.sso import set_sso_profile
@@ -93,6 +97,7 @@ def save_sample(sample, output_dir):
 
     sample = to_pil(sample)
     sample.save(image_path)
+    return image_path
 
 
 def main():
@@ -103,53 +108,66 @@ def main():
     ckpt_path = "generationLDM/pretrained/srikar/epoch_3-001.ckpt"
     save_to_s3 = True
 
-    size = 64 # Remember that the autoencoder upscales them by 4x!
+    size = 64  # Remember that the autoencoder upscales them by 4x!
     summary = "A H&E stained slide of a piece of kidney tissue"
     tumor_desc = "High tumor; low TIL;"  # What to do with this??
 
     nr_of_samples = 1500  # Nr of samples to generate
     depth_of_sampling = 50  # Steps in the sampling process
-    batch_size = 8 # 256 with batch size 4 crashes aws (out of memory)
+    batch_size = 8  # 256 with batch size 4 crashes aws (out of memory)
     shape = [3, size, size]
 
     now = datetime.now()
     formatted_now = now.strftime("%m-%d_%H%M")
-    if opt.location == 'maclocal':
+    if opt.location == "maclocal":
         output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
-    elif opt.location == 'remote':
-        output_dir =f"/home/aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
+    elif opt.location == "remote":
+        output_dir = f"/home/aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
     os.makedirs(output_dir, exist_ok=True)
     try:
         model = get_model(config_path, device, ckpt_path)
     except FileNotFoundError:
-        model = get_model('code/' + config_path, device, 'code/' + ckpt_path)
+        model = get_model("code/" + config_path, device, "code/" + ckpt_path)
 
     print(f"Generating {nr_of_samples} synthetic images of size {4*size} ...")
     print(f"Saving to {output_dir} ... ")
+    img_paths = []
     for i in tqdm(range(nr_of_samples // batch_size + 1)):
         samples = get_samples(model, shape, batch_size, depth_of_sampling, summary, tumor_desc)
         for sample in samples:
-            save_sample(sample, output_dir)
+            path = save_sample(sample, output_dir)
+            img_paths.append(path)
 
-    #save some metadata to a file in output dir as well.
+    fid = calculate_FID(paths=img_paths, device=device)
+    # save some metadata to a file in output dir as well.
 
-    with open(output_dir + '/metadata.txt', 'w') as f:
-        f.write(f"Model path used: {ckpt_path}")
-        f.write(f"Depth of sampling: {depth_of_sampling}")
-        f.write(f"Number of samples: {nr_of_samples}")
-        f.write(f"Batch size: {batch_size}")
-        f.write(f"Summary used: {summary}")
-        f.write(f"Tumor description: {tumor_desc}")
+    with open(output_dir + "/metadata.txt", "w") as f:
+        f.write(f"Model path used: {ckpt_path}\n")
+        f.write(f"FID compared to real data: {fid}\n")
+        f.write(f"Depth of sampling: {depth_of_sampling}\n")
+        f.write(f"Number of samples: {nr_of_samples}\n")
+        f.write(f"Batch size: {batch_size}\n")
+        f.write(f"Summary used: {summary}\n")
+        f.write(f"Tumor description: {tumor_desc}\n")
 
-    if save_to_s3 or opt.location == 'remote':
+    if save_to_s3 or opt.location == "remote":
         print(f"Saving samples in {output_dir} to S3 ...")
-        #set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
+        # set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
         upload_directory(
             output_dir,
             f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/",
         )
 
 
+def calculate_FID(paths, device):
+    model = InceptionV3().to(device)
+    mu_fake, sig_fake = calculate_activation_statistics(paths, model, device=device)
+    with np.load(Path("/home/aiosyn/code/generationLDM/FID/FID_outputs/FID_full.npz")) as f:
+        m1, s1 = f["mu"], f["sig"]
+
+    fid = calculate_frechet_distance(m1, s1, mu_fake, sig_fake)
+    print(f"Calculated FID: {fid}")
+    return fid
 
 def add_taming_lib(loc):
     if loc in ["local", "maclocal"]:
