@@ -14,9 +14,10 @@ submit_batch_job(
     account="computing-feature2", #For me, this is 2
     gpus=0,
     location='remote',
-    model="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt",
+    model="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-11T16-54_unconditional_aiosyn_data_plip-GEN-301/last.ckpt",
     summary="A H&E stained slide of a piece of kidney tissue",
-    tumor_desc="-",
-    number=1500,
+    tumor_desc="High tumor; low TIL;",
+    number=1500, #How many imgs to generate
+    all=False, #upload a zip of all images to S3. A subsample of 10 will always be uploaded
     n_attempts=3, #retries if it fails.
 )
