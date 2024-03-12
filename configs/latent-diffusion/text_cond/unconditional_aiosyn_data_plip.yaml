@@ -110,8 +110,8 @@ data:
 
 lightning:
   trainer:
-    max_epochs: 5
+    max_epochs: 15
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: Run with model ckpt logging to S3. #Name of the run as used by Neptune
+    run_name: 15 epoch run, starting at srikar. #Name of the run as used by Neptune
     weights_only: False #Choose whether to only save model weights or also the optimizer state. ~2 Gb v ~5 Gb.
     log_model_checkpoints: False # Tells Neptune to log the model ckpts or not. Turn off for testing
