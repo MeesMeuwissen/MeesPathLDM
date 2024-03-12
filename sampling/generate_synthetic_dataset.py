@@ -1,23 +1,23 @@
 import argparse
+import glob
 import os
 import sys
 import uuid
-from datetime import datetime
-import numpy as np
-from pathlib import Path
 import zipfile
-import glob
+from datetime import datetime
+from pathlib import Path
 
+import numpy as np
 import torch
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
-from torchvision import transforms
-from tqdm import tqdm
 from pytorch_fid.fid_score import calculate_activation_statistics, calculate_frechet_distance
 from pytorch_fid.inception import InceptionV3
+from torchvision import transforms
+from tqdm import tqdm
 
-from aiosynawsmodules.services.s3 import upload_file, download_file
+from aiosynawsmodules.services.s3 import download_file, upload_file
 from aiosynawsmodules.services.sso import set_sso_profile
 
 
@@ -51,40 +51,19 @@ def get_parser():
         help="Running local, maclocal or remote",
     )
     parser.add_argument(
-        "-m",
-        "--model",
-        type=str,
-        const=True,
-        default=False,
-        nargs="?",
-        help="Model to use for sampling"
+        "-m", "--model", type=str, const=True, default=False, nargs="?", help="Model to use for sampling"
     )
     parser.add_argument(
-        "-s",
-        "--summary",
-        type=str,
-        const=True,
-        default="",
-        nargs="?",
-        help="Summary input for conditioning"
+        "-s", "--summary", type=str, const=True, default="", nargs="?", help="Summary input for conditioning"
     )
     parser.add_argument(
-        "-t",
-        "--tumor_desc",
-        type=str,
-        const=True,
-        default="",
-        nargs="?",
-        help="Tumor conditioning description"
+        "-t", "--tumor_desc", type=str, const=True, default="", nargs="?", help="Tumor conditioning description"
     )
     parser.add_argument(
-        "-n",
-        "--number",
-        type=int,
-        const=True,
-        default=1500,
-        nargs="?",
-        help="Nr of samples to generate"
+        "-n", "--number", type=int, const=True, default=1500, nargs="?", help="Nr of samples to generate"
+    )
+    parser.add_argument(
+        "-a", "--all", type=bool, const=True, default=True, nargs="?", help="Upload a zip of all images to S3"
     )
     return parser
 
@@ -138,7 +117,7 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main(model_path, size, summary, tumor_desc, nr_of_samples=1500):
+def main(model_path, size, summary, tumor_desc, nr_of_samples=1500, opt=None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     )
@@ -182,22 +161,29 @@ def main(model_path, size, summary, tumor_desc, nr_of_samples=1500):
 
     if save_to_s3 or opt.location == "remote":
         print(f"Saving samples in {output_dir} to S3 ...")
-        # set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
+        for i, img_path in enumerate(img_paths[:10]):
+            upload_file(
+                img_path,
+                f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * size}/subsample_{i}",
+            )
 
-        zip_directory(output_dir, "generated_images.zip")
-        upload_file(
-            "generated_images.zip",
-            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/generated_images.zip",
-        )
+        if opt.all:
+            print("Zipping and uploading all samples ... ")
+            zip_directory(output_dir, "generated_images.zip")
+            upload_file(
+                "generated_images.zip",
+                f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/generated_images.zip",
+            )
         upload_file(
             output_dir + "/metadata.txt",
-            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/metadata.txt"
+            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/metadata.txt",
         )
     print("Done")
 
+
 def zip_directory(directory, zip_filename):
-    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for file in glob.glob(os.path.join(directory, '*.png')):
+    with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file in glob.glob(os.path.join(directory, "*.png")):
             zipf.write(file, os.path.relpath(file, directory))
 
 
@@ -210,6 +196,7 @@ def calculate_FID(paths, device):
     fid = calculate_frechet_distance(m1, s1, mu_fake, sig_fake)
     print(f"Calculated FID: {fid}")
     return fid
+
 
 def add_taming_lib(loc):
     if loc in ["local", "maclocal"]:
@@ -241,4 +228,4 @@ if __name__ == "__main__":
     nr_of_samples = opt.number
     model_path = opt.model
 
-    main(model_path, size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples)
+    main(model_path, size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples, opt=opt)
