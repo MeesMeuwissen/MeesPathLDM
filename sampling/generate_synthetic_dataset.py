@@ -64,7 +64,7 @@ def get_parser():
         "--summary",
         type=str,
         const=True,
-        default="A H&E stained slide of a piece of kidney tissue",
+        default="",
         nargs="?",
         help="Summary input for conditioning"
     )
@@ -73,7 +73,7 @@ def get_parser():
         "--tumor_desc",
         type=str,
         const=True,
-        default="High tumor; low TIL;",
+        default="",
         nargs="?",
         help="Tumor conditioning description"
     )
