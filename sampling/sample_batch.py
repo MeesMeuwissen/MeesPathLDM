@@ -14,5 +14,9 @@ submit_batch_job(
     account="computing-feature2", #For me, this is 2
     gpus=0,
     location='remote',
-    n_attempts=1,
+    model="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt",
+    summary="A H&E stained slide of a piece of kidney tissue",
+    tumor_desc="-",
+    number=1500,
+    n_attempts=3, #retries if it fails.
 )
