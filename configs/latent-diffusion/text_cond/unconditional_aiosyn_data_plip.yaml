@@ -19,7 +19,6 @@ model:
     monitor: val/loss
     use_ema: False
     ckpt_path: "/home/aiosyn/code/generationLDM/pretrained/srikar/epoch_3-001.ckpt" #pretrained unet model v2 (used by Srikar)
-
     #changing this also means you should change what model is downloaded from S3...
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
@@ -110,11 +109,6 @@ data:
           crop_size: 256
 
 lightning:
-  callbacks:
-    model_checkpoint:
-      target: pytorch_lightning.callbacks.ModelCheckpoint
-      params:
-        save_weights_only: True
   trainer:
     max_epochs: 5
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
