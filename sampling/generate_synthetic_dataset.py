@@ -57,9 +57,6 @@ def get_parser():
         "-s", "--summary", type=str, const=True, default="", nargs="?", help="Summary input for conditioning"
     )
     parser.add_argument(
-        "-t", "--tumor_desc", type=str, const=True, default="", nargs="?", help="Tumor conditioning description"
-    )
-    parser.add_argument(
         "-n", "--number", type=int, const=True, default=1500, nargs="?", help="Nr of samples to generate"
     )
     parser.add_argument(
@@ -68,7 +65,7 @@ def get_parser():
     return parser
 
 
-def get_samples(model, shape, batch_size, depth_of_sampling, summary, tumor_desc):
+def get_samples(model, shape, batch_size, depth_of_sampling, summary):
     scale = 1.5  # Scale of classifier free guidance
 
     sampler = DDIMSampler(model)
@@ -77,9 +74,8 @@ def get_samples(model, shape, batch_size, depth_of_sampling, summary, tumor_desc
         return [""] * batch_size
 
     def get_conditional_token(batch_size, summary):
-        # append tumor and TIL probability to the summary
-        tumor = [tumor_desc] * (batch_size)  # Keep this
-        return [t + summary for t in tumor]
+        summary = [summary] * batch_size
+        return summary
 
     with torch.no_grad():
         # unconditional token for classifier free guidance
@@ -117,7 +113,7 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main(model_path, size, summary, tumor_desc, nr_of_samples=1500, opt=None):
+def main(model_path, size, summary, nr_of_samples=1500, opt=None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     )
@@ -142,7 +138,7 @@ def main(model_path, size, summary, tumor_desc, nr_of_samples=1500, opt=None):
     print(f"Saving to {output_dir} ... ")
     img_paths = []
     for i in tqdm(range(nr_of_samples // batch_size + 1)):
-        samples = get_samples(model, shape, batch_size, depth_of_sampling, summary, tumor_desc)
+        samples = get_samples(model, shape, batch_size, depth_of_sampling, summary)
         for sample in samples:
             path = save_sample(sample, output_dir)
             img_paths.append(path)
@@ -157,7 +153,6 @@ def main(model_path, size, summary, tumor_desc, nr_of_samples=1500, opt=None):
         f.write(f"Number of samples: {nr_of_samples}\n")
         f.write(f"Batch size: {batch_size}\n")
         f.write(f"Summary used: {summary}\n")
-        f.write(f"Tumor description: {tumor_desc}\n")
 
     if save_to_s3 or opt.location == "remote":
         print(f"Saving samples in {output_dir} to S3 ...")
@@ -224,8 +219,7 @@ if __name__ == "__main__":
     add_taming_lib(opt.location)
     size = 64  # Remember that the autoencoder upscales them by 4x!
     summary = opt.summary
-    tumor_desc = opt.tumor_desc
     nr_of_samples = opt.number
     model_path = opt.model
 
-    main(model_path, size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples, opt=opt)
+    main(model_path, size=size, summary=summary, nr_of_samples=nr_of_samples, opt=opt)
