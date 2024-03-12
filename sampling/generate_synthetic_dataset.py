@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime
 import numpy as np
 from pathlib import Path
+import zipfile
+import glob
 
 import torch
 from ldm.models.diffusion.ddim import DDIMSampler
@@ -15,7 +17,7 @@ from tqdm import tqdm
 from pytorch_fid.fid_score import calculate_activation_statistics, calculate_frechet_distance
 from pytorch_fid.inception import InceptionV3
 
-from aiosynawsmodules.services.s3 import upload_directory, download_file
+from aiosynawsmodules.services.s3 import upload_file, download_file
 from aiosynawsmodules.services.sso import set_sso_profile
 
 
@@ -47,6 +49,42 @@ def get_parser():
         default="maclocal",
         nargs="?",
         help="Running local, maclocal or remote",
+    )
+    parser.add_argument(
+        "-m",
+        "--model",
+        type=str,
+        const=True,
+        default=False,
+        nargs="?",
+        help="Model to use for sampling"
+    )
+    parser.add_argument(
+        "-s",
+        "--summary",
+        type=str,
+        const=True,
+        default="A H&E stained slide of a piece of kidney tissue",
+        nargs="?",
+        help="Summary input for conditioning"
+    )
+    parser.add_argument(
+        "-t",
+        "--tumor_desc",
+        type=str,
+        const=True,
+        default="High tumor; low TIL;",
+        nargs="?",
+        help="Tumor conditioning description"
+    )
+    parser.add_argument(
+        "-n",
+        "--number",
+        type=int,
+        const=True,
+        default=1500,
+        nargs="?",
+        help="Nr of samples to generate"
     )
     return parser
 
@@ -100,13 +138,16 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main(size, summary, tumor_desc, nr_of_samples=1500):
+def main(model_path, size, summary, tumor_desc, nr_of_samples=1500):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     )
     config_path = "generationLDM/configs/sampling/sampling.yaml"
-    ckpt_path = "generationLDM/pretrained/srikar/epoch_3-001.ckpt"
     save_to_s3 = True
+
+    # Model will be downloaded to /home/aiosyn/model.ckpt (see download_model())
+    print("Downloading model ...")
+    download_model(model_path)
 
     depth_of_sampling = 50  # Steps in the sampling process
     batch_size = 8  # 256 with batch size 4 crashes aws (out of memory)
@@ -114,15 +155,9 @@ def main(size, summary, tumor_desc, nr_of_samples=1500):
 
     now = datetime.now()
     formatted_now = now.strftime("%m-%d_%H%M")
-    if opt.location == "maclocal":
-        output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
-    elif opt.location == "remote":
-        output_dir = f"/home/aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
+    output_dir = f"/home/aiosyn/data/generated_samples/{formatted_now}_size={4*size}"
     os.makedirs(output_dir, exist_ok=True)
-    try:
-        model = get_model(config_path, device, ckpt_path)
-    except FileNotFoundError:
-        model = get_model("code/" + config_path, device, "code/" + ckpt_path)
+    model = get_model("code/" + config_path, device, "/home/aiosyn/model.ckpt")
 
     print(f"Generating {nr_of_samples} synthetic images of size {4*size} ...")
     print(f"Saving to {output_dir} ... ")
@@ -137,7 +172,7 @@ def main(size, summary, tumor_desc, nr_of_samples=1500):
     # save some metadata to a file in output dir as well.
 
     with open(output_dir + "/metadata.txt", "w") as f:
-        f.write(f"Model path used: {ckpt_path}\n")
+        f.write(f"Model path used: {model_path}\n")
         f.write(f"FID compared to real data: {fid}\n")
         f.write(f"Depth of sampling: {depth_of_sampling}\n")
         f.write(f"Number of samples: {nr_of_samples}\n")
@@ -148,10 +183,22 @@ def main(size, summary, tumor_desc, nr_of_samples=1500):
     if save_to_s3 or opt.location == "remote":
         print(f"Saving samples in {output_dir} to S3 ...")
         # set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
-        upload_directory(
-            output_dir,
+
+        zip_directory(output_dir, "generated_images.zip")
+        upload_file(
+            "generated_images.zip",
             f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/",
         )
+        upload_file(
+            output_dir + "/metadata.txt",
+            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/metadata.txt"
+        )
+    print("Done")
+
+def zip_directory(directory, zip_filename):
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for file in glob.glob(os.path.join(directory, '*.png')):
+            zipf.write(file, os.path.relpath(file, directory))
 
 
 def calculate_FID(paths, device):
@@ -178,7 +225,7 @@ def download_model(path):
     # Running remotely, so model needs to be downloaded
     download_file(
         remote_path=path,
-        local_path="/home/aiosyn/code/generationLDM/pretrained/srikar/epoch_3-001.ckpt",
+        local_path="/home/aiosyn/model.ckpt",
     )
     sys.path.append("/home/aiosyn/code")
 
@@ -188,15 +235,10 @@ if __name__ == "__main__":
 
     opt, unknown = parser.parse_known_args()
     add_taming_lib(opt.location)
-    if opt.location == "remote":
-        # Model will be downloaded to pretrained/srikar/epoch_3-001.ckpt (see download_model())
-        print("Downloading model ...")
-        model_path = "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
-        download_model(model_path)
-
     size = 64  # Remember that the autoencoder upscales them by 4x!
-    summary = "A H&E stained slide of a piece of kidney tissue"
-    tumor_desc = "High tumor; low TIL;"  # What to do with this??
-    nr_of_samples = 1500 #default is 1500
+    summary = opt.summary
+    tumor_desc = opt.tumor_desc
+    nr_of_samples = opt.number
+    model_path = opt.model
 
-    main(size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples)
+    main(model_path, size=size, summary=summary, tumor_desc=tumor_desc, nr_of_samples=nr_of_samples)
