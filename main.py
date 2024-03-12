@@ -424,6 +424,7 @@ if __name__ == "__main__":
     os.environ["NEPTUNE_MODE"] = opt.neptune_mode
 
     os.environ["PYTHONUNBUFFERED"] = "1"
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
     if opt.name and opt.resume:
         raise ValueError(
@@ -574,11 +575,11 @@ if __name__ == "__main__":
 
         print(f"Monitoring {model.monitor} for checkpoint metric.")
         checkpoint_callback = ModelCheckpoint(
-            dirpath=logdir,
+            dirpath=ckptdir,
             save_top_k=1,
             save_last=True,
             monitor=model.monitor,
-            save_weights_only=trainer_config["weights_only"],
+            save_weights_only=trainer_config.weights_only,
         )
 
         # define my own trainer:
@@ -687,6 +688,10 @@ if __name__ == "__main__":
                     else:
                         trainer.fit(model, data)
                     print("Trainer has fitted the model.")
+                    print(f"Best model path: {checkpoint_callback.best_model_path}")
+                    print(f"Best model score: {checkpoint_callback.best_model_score}")
+                    trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
+                    trainer.logger.experiment["Best model score"] = checkpoint_callback.best_model_score
             except Exception:
                 melk()
                 raise
