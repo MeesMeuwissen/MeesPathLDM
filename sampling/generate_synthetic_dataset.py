@@ -187,7 +187,7 @@ def main(model_path, size, summary, tumor_desc, nr_of_samples=1500):
         zip_directory(output_dir, "generated_images.zip")
         upload_file(
             "generated_images.zip",
-            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/",
+            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*size}/generated_images.zip",
         )
         upload_file(
             output_dir + "/metadata.txt",
