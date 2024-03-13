@@ -16,6 +16,6 @@ submit_batch_job(
     location='remote',
     train=True,
     n_attempts=1,
-    base='code/generationLDM/configs/latent-diffusion/text_cond/unconditional_aiosyn_data_plip.yaml', #The correct config file
+    base='code/generationLDM/configs/latent-diffusion/text_cond/uncond_srikar_finetune.yaml', #The correct config file
     neptune_mode='async'
 )
