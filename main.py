@@ -349,7 +349,7 @@ class ThesisCallback(Callback):
         trainer.logger.experiment[f"validation_samples/epoch_{trainer.current_epoch}"].log(
             grid,
             name=f"Validation sample created at epoch {trainer.current_epoch} and step {trainer.global_step}.",
-            description=f'Caption used: "A H&E stained slide of a piece of kidney tissue" (If I did not forget to change this at least...',
+            description=f'Caption used: "A PAS stained slide of a piece of kidney tissue" (If I did not forget to change this at least...',
         )
         print("Logged the validation images!")
 
@@ -665,6 +665,11 @@ if __name__ == "__main__":
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 print("ckpt path:", ckpt_path)
                 trainer.save_checkpoint(ckpt_path)
+
+                run_id = trainer.logger.experiment["sys/id"].fetch()
+                upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}-{run_id}",
+                                 overwrite=True)
+                print("Synced logdir")
 
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
