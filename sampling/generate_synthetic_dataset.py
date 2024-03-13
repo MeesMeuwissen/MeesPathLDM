@@ -159,7 +159,7 @@ def main(model_path, size, summary, nr_of_samples=1500, opt=None):
         for i, img_path in enumerate(img_paths[:10]):
             upload_file(
                 img_path,
-                f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * size}/subsample_{i}",
+                f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * size}/subsample_{i}.png",
             )
 
         if opt.all:
