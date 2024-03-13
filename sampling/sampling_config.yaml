@@ -1,6 +1,6 @@
 # finetuned from u-net model trained on imagenet
 # vae fine-tuned on tcga dataset
-# copied from unconditional_aiosyn_data_plip.yaml
+# copied from uncond_srikar_finetune.yaml
 # attempt to sample with this.
 model:
   base_learning_rate: 2.5e-5
