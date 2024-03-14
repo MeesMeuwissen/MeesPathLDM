@@ -488,7 +488,14 @@ if __name__ == "__main__":
 
         if opt.location == "remote":
             print("Running remotely. Downloading pretrained models ...")
-            if config.model.params.ckpt_path is not None:
+
+            try:
+                _ = OmegaConf.select(config, "model.params.ckpt_path")
+                one_model_ckpt = True
+            except KeyError:
+                one_model_ckpt = False
+
+            if one_model_ckpt:
                 download_file(
                     remote_path=config.model.params.ckpt_path,
                     local_path="/home/aiosyn/model.ckpt",
@@ -496,9 +503,6 @@ if __name__ == "__main__":
                 print("Downloaded one ckpt for the whole model. Ready to load.")
                 config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
             else:
-                assert config.model.unet_config.params.ckpt_path is not None, "Missing checkpoints!"
-                assert config.model.first_stage_config.params.ckpt_path is not None, "Missing checkpoints!"
-
                 print("Downloading UNET and first stage model ckpts separately...")
                 download_file(
                     remote_path=config.model.unet_config.params.ckpt_path,
