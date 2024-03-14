@@ -496,10 +496,11 @@ if __name__ == "__main__":
             print("Running remotely. Downloading pretrained models ...")
 
             download_file(
-                remote_path="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt",
-                local_path="/home/aiosyn/code/generationLDM/pretrained/srikar/epoch_3-001.ckpt",
+                remote_path=config.model.params.ckpt_path,
+                local_path="/home/aiosyn/model.ckpt",
             )
             print("Downloaded unet. Ready to load.")
+            config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
         else:
             print("Models should already be downloaded.")
 
@@ -579,7 +580,7 @@ if __name__ == "__main__":
             save_top_k=1,
             save_last=True,
             monitor=model.monitor,
-            save_weights_only=trainer_config.weights_only,
+            save_weights_only=False,
         )
 
         # define my own trainer:
