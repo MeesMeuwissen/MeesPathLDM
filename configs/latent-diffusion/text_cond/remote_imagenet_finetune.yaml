@@ -15,6 +15,7 @@ model:
     conditioning_key: crossattn
     monitor: val/loss_simple_ema
     use_ema: False
+    ckpt_path: None
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
