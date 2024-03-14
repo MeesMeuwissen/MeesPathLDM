@@ -1257,17 +1257,10 @@ class LatentDiffusion(DDPM):
         corrector_kwargs=None,
     ):
         b, *_, device = *x.shape, x.device
-        outputs = self.p_mean_variance(
-            x=x,
-            c=c,
-            t=t,
-            clip_denoised=clip_denoised,
-            return_codebook_ids=return_codebook_ids,
-            quantize_denoised=quantize_denoised,
-            return_x0=return_x0,
-            score_corrector=score_corrector,
-            corrector_kwargs=corrector_kwargs,
-        )
+        outputs = self.p_mean_variance(x=x, c=c, t=t, clip_denoised=clip_denoised,
+                                       return_codebook_ids=return_codebook_ids, quantize_denoised=quantize_denoised,
+                                       return_x0=return_x0, score_corrector=score_corrector,
+                                       corrector_kwargs=corrector_kwargs)
         if return_codebook_ids:
             raise DeprecationWarning("Support dropped.")
             model_mean, _, model_log_variance, logits = outputs
