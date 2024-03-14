@@ -19,7 +19,7 @@ import torchvision
 import torchvision.transforms as transforms
 from get_data import download_dataset
 from ldm.data.base import Txt2ImgIterableBaseDataset
-from ldm.util import instantiate_from_config, plot_images
+from ldm.util import instantiate_from_config, plot_images, sync_logdir
 from omegaconf import OmegaConf
 from packaging import version
 from PIL import Image
@@ -303,9 +303,6 @@ class ThesisCallback(Callback):
     def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         print("THESISCALLBACK: Training is starting...")
 
-        # Log the run location to metadata directly
-        trainer.logger.experiment["Location"] = opt.location
-
     def on_train_end(self, trainer, pl_module):
         print("Training completed.")
 
@@ -321,14 +318,10 @@ class ThesisCallback(Callback):
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
         # hopefully progress
-        print(f"Finished the epoch, global step:{trainer.global_step}. Syncing logdir ...")
 
+        print(f"Finished the epoch, global step:{trainer.global_step}.")
         #Sync the whole logdirectory with aws, so upload it and overwrite is ok
-        if opt.location != 'remote':
-            set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
-        run_id = trainer.logger.experiment["sys/id"].fetch()
-        upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}-{run_id}", overwrite=True)
-        print("Done syncing logdir.")
+        sync_logdir(opt, trainer, logdir)
 
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
@@ -451,6 +444,7 @@ if __name__ == "__main__":
         opt.base = base_configs + opt.base
         _tmp = logdir.split("/")
         nowname = _tmp[-1]
+        logdir = os.path.join(opt.logdir, nowname) # Dit toegevoegd om te zorgen dat het een nieuwe logdir maakt steeds.
     else:
         if opt.name:
             name = "_" + opt.name
@@ -494,13 +488,28 @@ if __name__ == "__main__":
 
         if opt.location == "remote":
             print("Running remotely. Downloading pretrained models ...")
+            if config.model.params.ckpt_path is not None:
+                download_file(
+                    remote_path=config.model.params.ckpt_path,
+                    local_path="/home/aiosyn/model.ckpt",
+                )
+                print("Downloaded one ckpt for the whole model. Ready to load.")
+                config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
+            else:
+                assert config.model.unet_config.params.ckpt_path is not None, "Missing checkpoints!"
+                assert config.model.first_stage_config.params.ckpt_path is not None, "Missing checkpoints!"
 
-            download_file(
-                remote_path=config.model.params.ckpt_path,
-                local_path="/home/aiosyn/model.ckpt",
-            )
-            print("Downloaded unet. Ready to load.")
-            config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
+                print("Downloading UNET and first stage model ckpts separately...")
+                download_file(
+                    remote_path=config.model.unet_config.params.ckpt_path,
+                    local_path="/home/aiosyn/unet_model.ckpt",
+                )
+                config.model.unet_config.params.ckpt_path="/home/aiosyn/unet_model.ckpt"
+                download_file(
+                    remote_path=config.model.first_stage_config.params.ckpt_path,
+                    local_path="/home/aiosyn/first_stage_model.ckpt",
+                )
+                config.model.first_stage_config.params.ckpt_path = "/home/aiosyn/first_stage_model.ckpt"
         else:
             print("Models should already be downloaded.")
 
@@ -602,12 +611,11 @@ if __name__ == "__main__":
             devices=1,
             logger=neptune_logger,
             callbacks=[ThesisCallback(), checkpoint_callback],
-            default_root_dir="s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/"
         )
         #trainer.logdir = logdir  ###
         print(f"{logdir = }")
         config.data["location"] = opt.location
-        trainer.logger.experiment["Location"] = opt.location
+        trainer.logger.experiment["location"] = opt.location
 
         assert config.data.location in [
             "local",
@@ -668,9 +676,12 @@ if __name__ == "__main__":
                 trainer.save_checkpoint(ckpt_path)
 
                 run_id = trainer.logger.experiment["sys/id"].fetch()
-                upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}-{run_id}",
-                                 overwrite=True)
-                print("Synced logdir")
+                if opt.location in ['remote']:
+                    upload_directory(
+                        logdir,
+                        f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}-{run_id}",
+                        overwrite=True)
+                    print("Synced logdir")
 
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
@@ -694,6 +705,7 @@ if __name__ == "__main__":
                     else:
                         trainer.fit(model, data)
                     print("Trainer has fitted the model.")
+                    sync_logdir(opt, trainer, logdir) #Sync logdir after training finishes
                     print(f"Best model path: {checkpoint_callback.best_model_path}")
                     print(f"Best model score: {checkpoint_callback.best_model_score}")
                     trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
