@@ -1,0 +1,106 @@
+model:
+  base_learning_rate: 1.0e-06
+  target: ldm.models.diffusion.ddpm.LatentDiffusion
+  params:
+    linear_start: 0.0015
+    linear_end: 0.0195
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    first_stage_key: image
+    cond_stage_key: caption
+    image_size: 32
+    channels: 4
+    cond_stage_trainable: false #freeze PLIP/CLIP
+    conditioning_key: crossattn
+    monitor: val/loss_simple_ema
+    use_ema: False
+    unet_config:
+      target: ldm.modules.diffusionmodules.openaimodel.UNetModel
+      params:
+        ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/unet.ckpt"
+        image_size: 32
+        in_channels: 4
+        out_channels: 4
+        model_channels: 256
+        attention_resolutions:
+        - 4
+        - 2
+        - 1
+        num_res_blocks: 2
+        channel_mult:
+        - 1
+        - 2
+        - 4
+        num_head_channels: 32
+        use_spatial_transformer: true
+        transformer_depth: 1
+        context_dim: 512
+    first_stage_config:
+      target: ldm.models.autoencoder.VQModelInterface
+      params:
+        ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/autoencoder/tcga_10x_vae.ckpt"
+        embed_dim: 4
+        n_embed: 16384
+        ddconfig:
+          double_z: false
+          z_channels: 4
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult:
+          - 1
+          - 2
+          - 2
+          - 4
+          num_res_blocks: 2
+          attn_resolutions:
+          - 32
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+    cond_stage_config:
+      target: ldm.modules.encoders.modules.FrozenCLIPEmbedder
+      params:
+        # plip is the pathology clip model
+        # plip- model: vinid/plip
+        #openai/clip-vit-base-patch32" # regular clip as used by Srikar
+        version: "vinid/plip" # regular clip as used by Srikar
+        max_length: 154
+data:
+  already_downloaded: True # Only applies if running locally. If data is downloaded, you can speed things up.
+  dataset_name: first_patch_dataset_1.00_spacing/patches #the name of the dataset as it is on S3, under patch_datasets
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 8
+    num_workers: 8
+    wrap: false
+    train:
+      target: ldm.data.text_cond.thesis_conditioning.KidneyUnconditional
+      params:
+        config:
+          subsample: True # The full dataset is always still downloaded
+          root: first_patch_dataset_1.00_spacing/patches #start without / !
+          csv: first_patch_dataset_1.00_spacing/patches.csv
+          split: train
+          flip_h: 0.5
+          flip_v: 0.5
+          size: 100000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
+          crop_size: 256 # size of the images
+    validation:
+      target: ldm.data.text_cond.thesis_conditioning.KidneyUnconditional
+      params:
+        config:
+          root: first_patch_dataset_1.00_spacing/patches
+          csv: first_patch_dataset_1.00_spacing/patches.csv
+          split: validation
+          size: 1500 # Dit geeft aan hoeveel samples er gemaakt moeten worden? Of hoeveel er worden gelezen?
+          crop_size: 256
+
+lightning:
+  trainer:
+    max_epochs: 10
+    skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
+    run_name: CompVis UNET with BRCA finetuned vae  #Name of the run as used by Neptune
+    log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
