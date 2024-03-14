@@ -505,15 +505,15 @@ if __name__ == "__main__":
             else:
                 print("Downloading UNET and first stage model ckpts separately...")
                 download_file(
-                    remote_path=config.model.unet_config.params.ckpt_path,
+                    remote_path=config.model.params.unet_config.params.ckpt_path,
                     local_path="/home/aiosyn/unet_model.ckpt",
                 )
-                config.model.unet_config.params.ckpt_path="/home/aiosyn/unet_model.ckpt"
+                config.model.params.unet_config.params.ckpt_path="/home/aiosyn/unet_model.ckpt"
                 download_file(
-                    remote_path=config.model.first_stage_config.params.ckpt_path,
+                    remote_path=config.model.params.first_stage_config.params.ckpt_path,
                     local_path="/home/aiosyn/first_stage_model.ckpt",
                 )
-                config.model.first_stage_config.params.ckpt_path = "/home/aiosyn/first_stage_model.ckpt"
+                config.model.params.first_stage_config.params.ckpt_path = "/home/aiosyn/first_stage_model.ckpt"
         else:
             print("Models should already be downloaded.")
 
