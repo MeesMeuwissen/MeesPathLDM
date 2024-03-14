@@ -3,6 +3,9 @@ import importlib
 import torch
 import numpy as np
 import pytorch_lightning as pl
+import datetime
+from aiosynawsmodules.services.sso import set_sso_profile
+from aiosynawsmodules.services.s3 import upload_directory
 
 from collections import abc
 from einops import rearrange
@@ -43,6 +46,19 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
 
     trainer.logger.experiment[f"batch_samples/{split}/epoch_{trainer.current_epoch}/{batch_idx}"].append(fig, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
     plt.close(fig)
+
+def sync_logdir(opt, trainer, logdir):
+    print("Syncing logdir...")
+    # Sync the whole logdirectory with aws, so upload it and overwrite is ok
+    if opt.location != 'remote':
+        set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
+    run_id = trainer.logger.experiment["sys/id"].fetch()
+    date = datetime.datetime.now()
+    date = datetime.datetime.now()
+    date = date.strftime("%m-%d")
+    upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{date}-{opt.location}-{run_id}",
+                     overwrite=True)
+    print("Done syncing logdir.")
 
 def log_txt_as_img(wh, xc, size=10):
     # wh a tuple of (width, height)
