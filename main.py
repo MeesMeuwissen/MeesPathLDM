@@ -492,7 +492,7 @@ if __name__ == "__main__":
             try:
                 remote_path=config.model.params.ckpt_path
                 one_model_ckpt = True
-            except KeyError:
+            except Exception:
                 one_model_ckpt = False
 
             if one_model_ckpt:
