@@ -490,7 +490,7 @@ if __name__ == "__main__":
             print("Running remotely. Downloading pretrained models ...")
 
             try:
-                _ = OmegaConf.select(config, "model.params.ckpt_path")
+                remote_path=config.model.params.ckpt_path
                 one_model_ckpt = True
             except KeyError:
                 one_model_ckpt = False
