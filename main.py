@@ -678,14 +678,7 @@ if __name__ == "__main__":
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 print("ckpt path:", ckpt_path)
                 trainer.save_checkpoint(ckpt_path)
-
-                run_id = trainer.logger.experiment["sys/id"].fetch()
-                if opt.location in ['remote']:
-                    upload_directory(
-                        logdir,
-                        f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}-{run_id}",
-                        overwrite=True)
-                    print("Synced logdir")
+                sync_logdir(opt, trainer, logdir)  # Sync logdir after training finishes
 
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
