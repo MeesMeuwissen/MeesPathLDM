@@ -13,7 +13,7 @@ model:
     channels: 3
     cond_stage_trainable: false #frozen clip encoder
     conditioning_key: crossattn
-    monitor: val/loss_simple_ema
+    monitor: val/loss
     use_ema: False
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
@@ -75,14 +75,14 @@ data:
   dataset_name: first_patch_dataset_1.00_spacing/patches #the name of the dataset as it is on S3, under patch_datasets
   target: main.DataModuleFromConfig
   params:
-    batch_size: 8
-    num_workers: 8
+    batch_size: 16
+    num_workers: 12
     wrap: false
     train:
       target: ldm.data.text_cond.thesis_conditioning.KidneyUnconditional
       params:
         config:
-          subsample: True # The full dataset is always still downloaded
+          subsample: False
           root: first_patch_dataset_1.00_spacing/patches #start without / !
           csv: first_patch_dataset_1.00_spacing/patches.csv
           split: train
@@ -102,7 +102,7 @@ data:
 
 lightning:
   trainer:
-    max_epochs: 10
+    max_epochs: 20
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
     run_name: CompVis UNET with BRCA finetuned vae  #Name of the run as used by Neptune
     log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
