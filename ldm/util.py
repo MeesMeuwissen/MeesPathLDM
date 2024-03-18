@@ -54,9 +54,8 @@ def sync_logdir(opt, trainer, logdir):
         set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
     run_id = trainer.logger.experiment["sys/id"].fetch()
     date = datetime.datetime.now()
-    date = datetime.datetime.now()
     date = date.strftime("%m-%d")
-    upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{date}-{opt.location}-{run_id}",
+    upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/{date}-{opt.location}-{run_id}",
                      overwrite=True)
     print("Done syncing logdir.")
 
