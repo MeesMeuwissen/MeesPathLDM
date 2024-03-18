@@ -1,5 +1,5 @@
 model:
-  base_learning_rate: 2.5e-5
+  base_learning_rate: 2.5e-3
   target: ldm.models.diffusion.ddpm.LatentDiffusion
   params:
     linear_start: 0.0015
@@ -104,5 +104,5 @@ lightning:
   trainer:
     max_epochs: 20
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: CompVis UNET with BRCA finetuned vae  #Name of the run as used by Neptune
+    run_name: CompVis UNET with BRCA finetuned vae, high-ass lr, 20 epochs  #Name of the run as used by Neptune
     log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
