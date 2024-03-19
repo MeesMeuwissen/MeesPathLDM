@@ -545,6 +545,7 @@ class LatentDiffusion(DDPM):
             self.restarted_from_ckpt = True
 
         self.validation_step_outputs = []
+        self.validation_step_inputs = []
         self.track_fid = track_fid
         self.fid_path = fid_path
 
@@ -587,7 +588,6 @@ class LatentDiffusion(DDPM):
             self.register_buffer("scale_factor", 1.0 / z.flatten().std())
             print(f"setting self.scale_factor to {self.scale_factor}")
             print("### USING STD-RESCALING ###")
-
 
     def register_schedule(
         self,
@@ -1012,7 +1012,6 @@ class LatentDiffusion(DDPM):
             if self.shorten_cond_schedule:  # TODO: drop this option
                 tc = self.cond_ids[t].to(self.device)
                 c = self.q_sample(x_start=c, t=tc, noise=torch.randn_like(c.float()))
-
         return self.p_losses(x, c, t, *args, **kwargs)
 
     def _rescale_annotations(self, bboxes, crop_coordinates):  # TODO: move to dataset
@@ -1526,6 +1525,7 @@ class LatentDiffusion(DDPM):
     @torch.no_grad()
     def on_validation_epoch_start(self):
         self.validation_step_outputs = []
+        self.validation_step_inputs = []
 
     @torch.no_grad()
     def validation_step(self, batch, batch_idx):
@@ -1537,6 +1537,7 @@ class LatentDiffusion(DDPM):
         if not len(out) or len(out) * len(out[0]) < 1500:
             samples = self.get_fid_samples(batch)
             self.validation_step_outputs.append(samples)
+            self.validation_step_inputs.append(batch["caption"][0])
 
     @torch.no_grad()
     def on_validation_epoch_end(self):
@@ -1566,7 +1567,7 @@ class LatentDiffusion(DDPM):
 
         print("FID", fid)
         fid = fid.astype(np.float32) #float32 for mps
-        self.log_dict({"FID": fid, "Nr of samples for FID": len(all_samples)}, prog_bar=False, logger=True, on_step=False, on_epoch=True)
+        self.log_dict({"FID": fid}, prog_bar=False, logger=True, on_step=False, on_epoch=True)
 
     @torch.no_grad()
     def get_fid_samples(self, batch):
