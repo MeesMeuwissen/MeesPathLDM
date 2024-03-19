@@ -309,10 +309,10 @@ class ThesisCallback(Callback):
     def on_train_batch_start(
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", batch: Any, batch_idx: int
     ) -> None:
-        split = "train"
+
         # log the batch every 500 batches ?
-        if batch_idx % 500 == 0:
-            plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4, split=split)
+        if batch_idx % 1000 == 0:
+            plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
         # print(f"Logged the batch to batch_samples/{split}/{batch_idx}")
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
@@ -331,20 +331,18 @@ class ThesisCallback(Callback):
         print("Starting validation ...")
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        samples = trainer.model.validation_step_outputs[
-            0
-        ]  # A batch of 8 imgs I think, it has shape (8,3,256,256), dtype uint8)
+        samples = trainer.model.validation_step_outputs[0]  # A batch of 8 imgs I think, it has shape (8,3,256,256), dtype uint8)
         samples_t = torch.from_numpy(samples / 255.0)
+        val_inputs = trainer.model.validation_step_inputs[0]
 
         grid = torchvision.utils.make_grid(samples_t, nrow=4, padding=10)
         grid = transforms.functional.to_pil_image(grid)
 
-        trainer.logger.experiment[f"validation_samples/epoch_{trainer.current_epoch}"].log(
+        trainer.logger.experiment[f"validation_samples/generated_images"].log(
             grid,
             name=f"Validation sample created at epoch {trainer.current_epoch} and step {trainer.global_step}.",
-            description=f'Caption used: "A PAS stained slide of a piece of kidney tissue" (If I did not forget to change this at least...',
+            description=f'Example of caption used: {val_inputs}',
         )
-        print("Logged the validation images!")
 
 
 if __name__ == "__main__":
@@ -602,6 +600,7 @@ if __name__ == "__main__":
             project="generation",
             name=trainer_config["run_name"],
             log_model_checkpoints=trainer_config.log_model_checkpoints,
+
         )
         # Log all hyperparams
         neptune_logger.log_hyperparams(params=config)
