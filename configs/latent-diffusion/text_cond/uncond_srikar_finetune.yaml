@@ -94,8 +94,7 @@ data:
           root: first_patch_dataset_1.00_spacing/patches #start without / !
           csv: first_patch_dataset_1.00_spacing/patches.csv
           split: train
-          flip_h: 0.5
-          flip_v: 0.5
+          flip_p: 0.5
           size: 100000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
           crop_size: 256 # size of the images
     validation: #For now, this is the same as the test split...

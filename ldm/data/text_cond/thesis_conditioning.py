@@ -7,12 +7,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
 from PIL import Image
 from torch.utils.data import Dataset, Subset
 from torchvision.datasets import MNIST
 import pandas
+import random
+
+
 def permute_channels(x):
     return x.permute(1, 2, 0).contiguous()
+
 
 class KidneyUnconditional(Dataset):
     def __init__(self, config=None):
@@ -40,14 +45,9 @@ class KidneyUnconditional(Dataset):
         self.size = min(config.get("size"), len(self.csv))
 
         self.crop_size = config.get("crop_size", None)
-        self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
-        self.flip_vertical = config.get("flip_v", 0)
-
-
+        self.flip_p = config.get("flip_p", 0)  # Default to 0 (no flips)
         self.transform = transforms.Compose(
             [
-                transforms.RandomHorizontalFlip(p=self.flip_horizontal),
-                transforms.RandomVerticalFlip(p=self.flip_vertical),
                 transforms.ToTensor(),
                 transforms.Lambda(permute_channels),
             ]
@@ -57,69 +57,142 @@ class KidneyUnconditional(Dataset):
         return self.size
 
     def __getitem__(self, idx):
-        caption = "A PAS stained slide of a piece of kidney tissue"  # Generic caption
-
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
         img_path = os.path.join(self.data_dir, img_path)
 
         img = Image.open(img_path).convert("RGB")
-
+        img = self.random_flips(img, self.flip_p)
         img = self.transform(img)
 
+        if img.shape[1] > self.crop_size:
+            img = self.get_random_crop(img, self.crop_size)
+
+        caption = self.create_caption()
         # should be HWC
         assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
         return {"image": img, "caption": caption}
 
+    def create_caption(self):
+        return "A PAS stained slide of a piece of kidney tissue"  # Generic caption
 
-class KidneyConditional(Dataset):
+    def get_random_crop(self, image, crop_size):
+        # Get the dimensions of the original image
+        width, height = image.size
+
+        # Calculate the maximum valid coordinates for the top-left corner of the crop
+        max_x = width - crop_size
+        max_y = height - crop_size
+
+        # Generate random coordinates for the top-left corner of the crop
+        x = random.randint(0, max_x)
+        y = random.randint(0, max_y)
+
+        # Perform the crop
+        cropped_image = image.crop((x, y, x + crop_size, y + crop_size))
+        return cropped_image,
+
+    def random_flips(self, img, p):
+        if torch.rand(1) < p:
+            img = F.hflip(img)
+        if torch.rand(1) < p:
+            img = F.vflip(img)
+        return img
+
+
+class KidneyConditional(KidneyUnconditional):
     def __init__(self, config=None):
-        self.location = config.get("location")
-        self.data_dir = Path(config.get("root"))
-        if self.location == "local":
-            prefix = Path("/mnt/c/Users/MeesMeuwissen/Documents/Aiosyn/data/")
-        elif self.location == "remote":
-            prefix = Path("/tmp/data/")
-        else:
-            raise ValueError("Wrong location. Please choose either 'local' or 'remote'.")
-
-        self.data_dir = prefix / self.data_dir
-        self.csv = prefix / config.get("csv")
-        self.csv = pandas.read_csv(self.csv)
-
-        self.slides_list = os.listdir(self.data_dir)
-        self.size = min(config.get("size"), len(self.csv))
-
-        self.crop_size = config.get("crop_size", None)
-        self.flip_horizontal = config.get("flip_h", 0)  # Default to 0 (no flips)
-        self.flip_vertical = config.get("flip_v", 0)
-
-
-        self.transform = transforms.Compose(
-            [
-                transforms.RandomHorizontalFlip(p=self.flip_horizontal),
-                transforms.RandomVerticalFlip(p=self.flip_vertical),
-                transforms.ToTensor(),
-                transforms.Lambda(permute_channels),
-            ]
-        )
-
-    def __len__(self):
-        return self.size
+        super(KidneyConditional, self).__init__(config)
 
     def __getitem__(self, idx):
-        caption = ""  # TODO: Fix this caption. It should ideally contain information from the slide, such as tissue type and distribution. Example: "H&E stain of a glomerulus, 40% X, 60% Y." These percentages could be obtained with use of Aiosyns models
-
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
+        msk_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "msk")  # Read the msk part
+
         img_path = os.path.join(self.data_dir, img_path)
-
+        msk_path = os.path.join(self.data_dir, msk_path)
         img = Image.open(img_path).convert("RGB")
+        msk = Image.open(msk_path)
 
+        img, msk = self.random_flips(img, msk, self.flip_p)
         img = self.transform(img)
+        msk = self.transform(msk)
 
+        if img.shape[1] > self.crop_size:
+            img, msk = self.get_random_crop(img, msk, self.crop_size)
+
+        caption = self.create_caption(msk)
         # should be HWC
         assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
         return {"image": img, "caption": caption}
 
+    def create_caption(self, mask):
+        """
+        The different classes:
+        0: 0 # No mask (background)
+        1: 1 # Arteries
+        2: 8 # Arterioles
+        3: 2 # Atrophic tubuli
+        4: 8 # Background
+        5: 8 # Capillaries
+        6: 3 # Capsule
+        7: 4 # Distal tubuli
+        8: 8 # Fat
+        9: 5 # Glomeruli
+        10: 8 # Other
+        11: 6 # Proximal tubuli
+        12: 7 # Sclerotic glomeruli
+        13: 0  # Undefined tubuli - don't learn from areas of undefined tubuli because it's not really background (it's tubuli)
+        14: 8 # Vessels
+        """
+        pixels = np.array(mask).ravel()
+        hist, bins = np.histogram(pixels, bins=np.arange(0, 16))  # 15 classes, some will be very rarely seen.
+        percentages = hist / len(pixels) * 100
+
+        rest = percentages[0] + percentages[4] + percentages[10] + percentages[13]
+        caption = (
+            "This image displays histological sections of renal tissue, showcasing various types of tissue structures. "
+            "The composition of the image includes:\n"
+            f"- Arteries: {percentages[1]:.2f}%\n"
+            f"- Arterioles: {percentages[2]:.2f}%\n"
+            f"- Atrophic tubuli: {percentages[3]:.2f}%\n"
+            f"- Capillaries: {percentages[5]:.2f}%\n"
+            f"- Capsule: {percentages[6]:.2f}%\n"
+            f"- Distal tubuli: {percentages[7]:.2f}%\n"
+            f"- Fat: {percentages[8]:.2f}%\n"
+            f"- Glomeruli: {percentages[9]:.2f}%\n"
+            f"- Proximal tubuli: {percentages[11]:.2f}%\n"
+            f"- Sclerotic glomeruli: {percentages[12]:.2f}%\n"
+            f"- Vessels: {percentages[14]:.2f}%\n"
+            f"The other {rest:.2f}% of the image consists of background and undefined tubuli."
+        )
+
+        return caption
+
+
+    def random_flips(self, img, msk, p):
+        if torch.rand(1) < p:
+            img = F.hflip(img)
+            msk = F.hflip(msk)
+        if torch.rand(1) < p:
+            img = F.vflip(img)
+            msk = F.vflip(msk)
+        return img, msk
+
+    def get_random_crop(self, image, mask, crop_size):
+        # Get the dimensions of the original image
+        width, height = image.shape[1], image.shape[0]
+
+        # Calculate the maximum valid coordinates for the top-left corner of the crop
+        max_x = width - crop_size
+        max_y = height - crop_size
+
+        # Generate random coordinates for the bottom-left corner of the crop
+        x = random.randint(0, max_x)
+        y = random.randint(0, max_y)
+
+        # Perform the crop
+        cropped_image = image[y:y + crop_size, x:x + crop_size]
+        cropped_mask = mask[y:y + crop_size, x:x + crop_size]
+        return cropped_image, cropped_mask
 
 class HandwrittenDigits(Dataset):
     def __init__(self, config=None):
