@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from inspect import isfunction
 from PIL import Image, ImageDraw, ImageFont
 
-def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_rows: int = 4,  num_cols: int = 4,  split: str = "train", figsize: Tuple[int, int] = (10,10)) -> None:
+def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_rows: int = 4,  num_cols: int = 4, figsize: Tuple[int, int] = (10,10)) -> None:
     """
     Plot images with batch inputs, masks, and outputs.
     Args:
@@ -44,7 +44,7 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
             ax.imshow(image) # Images are HWC
         ax.axis('off')  # Hide axis
 
-    trainer.logger.experiment[f"batch_samples/{split}/epoch_{trainer.current_epoch}/{batch_idx}"].append(fig, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
+    trainer.logger.experiment[f"batch_samples/epoch_{trainer.current_epoch}/{batch_idx}"].append(fig, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
     plt.close(fig)
 
 def sync_logdir(opt, trainer, logdir):
