@@ -424,25 +424,32 @@ if __name__ == "__main__":
             "use -n/--name in combination with --resume_from_checkpoint"
         )
     if opt.resume:
-        if not os.path.exists(opt.resume):
-            raise ValueError("Cannot find {}".format(opt.resume))
-        if os.path.isfile(opt.resume):
-            paths = opt.resume.split("/")
-            # idx = len(paths)-paths[::-1].index("logs")+1
-            # logdir = "/".join(paths[:idx])
-            logdir = "/".join(paths[:-2])
-            ckpt = opt.resume
-        else:
-            assert os.path.isdir(opt.resume), opt.resume
-            logdir = opt.resume.rstrip("/")
-            ckpt = os.path.join(logdir, "checkpoints", "last.ckpt")
 
-        opt.resume_from_checkpoint = ckpt
-        base_configs = sorted(glob.glob(os.path.join(logdir, "configs/*.yaml")))
-        opt.base = base_configs + opt.base
-        _tmp = logdir.split("/")
-        nowname = _tmp[-1]
-        logdir = os.path.join(opt.logdir, nowname) # Dit toegevoegd om te zorgen dat het een nieuwe logdir maakt steeds.
+        if opt.resume[-1] == "/":
+            #Remove final "/"
+            opt.resume = opt.resume[:-1]
+
+        logdir = "logs"
+        if opt.location in ['local', 'maclocal']:
+            set_sso_profile(profile_name="aws-aiosyn-data", region_name="eu-west-1")
+
+        #Example opt.resume arg: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-19-remote-GEN-353/
+        logdir = "logs/"+opt.resume.split("/")[-1]
+        run_id = logdir.split('-')[-1]
+        run_name = 'GEN-'+ run_id
+
+        print(f"Resuming run {run_name}. Downloading the logdir from S3 ({opt.resume}) to local ({logdir})")
+        download_directory(
+            remote_s3_url=opt.resume,
+            local_dir=logdir,
+            overwrite=True,
+            recursive=True,
+        )
+
+        print("Done")
+
+        #Set the checkpoint to the last one in the logdir
+        resume_ckpt = f"{logdir}/checkpoints/last.ckpt"
     else:
         if opt.name:
             name = "_" + opt.name
@@ -453,7 +460,9 @@ if __name__ == "__main__":
         else:
             name = ""
         nowname = now + name + opt.postfix
-        logdir = os.path.join(opt.logdir, nowname)
+        date = datetime.datetime.now()
+        date = date.strftime("%m-%d")
+        logdir = f"logs/{date}-{opt.location}"
 
     ckptdir = os.path.join(logdir, "checkpoints")
     cfgdir = os.path.join(logdir, "configs")
@@ -483,6 +492,10 @@ if __name__ == "__main__":
 
         # model
         print("Attempting to load model ...")
+
+        if opt.resume:
+            #Set the model ckpt to the last one from prev run.
+            config.model.params.ckpt_path = resume_ckpt
 
         if opt.location == "remote":
             print("Running remotely. Downloading pretrained models ...")
@@ -595,13 +608,22 @@ if __name__ == "__main__":
         )
 
         # define my own trainer:
-        neptune_logger = NeptuneLogger(
-            api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
-            project="generation",
-            name=trainer_config["run_name"],
-            log_model_checkpoints=trainer_config.log_model_checkpoints,
 
-        )
+        if opt.resume:
+            neptune_logger = NeptuneLogger(
+                api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
+                project="generation",
+                name=trainer_config["run_name"],
+                log_model_checkpoints=trainer_config.log_model_checkpoints,
+                with_id = run_name
+            )
+        else:
+            neptune_logger = NeptuneLogger(
+                api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
+                project="generation",
+                name=trainer_config["run_name"],
+                log_model_checkpoints=trainer_config.log_model_checkpoints,
+            )
         # Log all hyperparams
         neptune_logger.log_hyperparams(params=config)
         neptune_logger.log_hyperparams(params=trainer_config)
@@ -616,6 +638,9 @@ if __name__ == "__main__":
             callbacks=[ThesisCallback(), checkpoint_callback],
         )
         #trainer.logdir = logdir  ###
+        if not opt.resume:
+            run_id = trainer.logger.experiment["sys/id"].fetch()
+            logdir = logdir + f"-{run_id}"
         print(f"{logdir = }")
         config.data["location"] = opt.location
         trainer.logger.experiment["location"] = opt.location
