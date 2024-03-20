@@ -644,6 +644,7 @@ if __name__ == "__main__":
         print(f"{logdir = }")
         config.data["location"] = opt.location
         trainer.logger.experiment["location"] = opt.location
+        trainer.logger.experiment["base"] = opt.base
 
         assert config.data.location in [
             "local",
