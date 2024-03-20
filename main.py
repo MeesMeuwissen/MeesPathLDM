@@ -447,8 +447,6 @@ if __name__ == "__main__":
         )
 
         print("Done")
-        
-
         #Set the checkpoint to the last one in the logdir
         resume_ckpt = opt.resume + "/checkpoints/last.ckpt"
     else:
@@ -495,8 +493,26 @@ if __name__ == "__main__":
         print("Attempting to load model ...")
 
         if opt.resume:
-            #Set the model ckpt to the last one from prev run.
-            config.model.params.ckpt_path = resume_ckpt
+            # Remove all references to ckpts from the config:
+            try:
+                del config["model"]["params"]["first_stage_config"]["params"]["ckpt_path"]
+            except Exception:
+                pass
+            try:
+                del config["model"]["params"]["ckpt_path"]
+            except Exception:
+                pass
+            try:
+                del config["model"]["params"]["unet_config"]["params"]["ckpt_path"]
+            except Exception:
+                pass
+
+                # Set the model ckpt to the last one from prev run.
+            if opt.location in ['remote']:
+                config.model.params.ckpt_path = resume_ckpt
+                trainer_resume_ckpt = "/home/aiosyn/model.ckpt"
+        else:
+            trainer_resume_ckpt = None
 
         if opt.location == "remote":
             print("Running remotely. Downloading pretrained models ...")
@@ -637,6 +653,7 @@ if __name__ == "__main__":
             devices=1,
             logger=neptune_logger,
             callbacks=[ThesisCallback(), checkpoint_callback],
+            resume_from_checkpoint=trainer_resume_ckpt
         )
         #trainer.logdir = logdir  ###
         if not opt.resume:
