@@ -447,9 +447,10 @@ if __name__ == "__main__":
         )
 
         print("Done")
+        
 
         #Set the checkpoint to the last one in the logdir
-        resume_ckpt = f"{logdir}/checkpoints/last.ckpt"
+        resume_ckpt = opt.resume + "/checkpoints/last.ckpt"
     else:
         if opt.name:
             name = "_" + opt.name
