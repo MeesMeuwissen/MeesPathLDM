@@ -1,5 +1,5 @@
 import numpy as np
-
+import math
 
 class LambdaWarmUpCosineScheduler:
     """
@@ -97,3 +97,28 @@ class LambdaLinearScheduler(LambdaWarmUpCosineScheduler2):
             )
             self.last_f = f
             return f
+
+class CosineScheduler:
+
+    def __init__(self, lr_warmup_steps, lr_max, lr_start, total_training_steps):
+
+        self.lr_max = lr_max
+        self.lr_warmup_steps = lr_warmup_steps
+        self.lr_start = lr_start
+        self.total_training_steps = total_training_steps
+        self.last_f = 0.0
+        self.lr_increment = (self.lr_max - self.lr_start) / self.lr_warmup_steps
+    #total_training_steps = len(train_loader) * n_epoch
+
+    def __call__(self, n, **kwargs):
+        return self.schedule(n, **kwargs)
+
+    def schedule(self, n, **kwargs):
+        if n < self.lr_warmup_steps:
+            lr = self.lr_start + n * self.lr_increment
+        else:
+            #Implement cos decay:
+            progress = ((n - self.lr_warmup_steps) /
+                        (self.total_training_steps - self.lr_warmup_steps))
+            lr = self.lr_start + (self.lr_max - self.lr_start) * 0.5 * (1 + math.cos(math.pi * progress))
+        return lr
