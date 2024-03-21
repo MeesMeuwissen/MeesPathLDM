@@ -675,7 +675,7 @@ if __name__ == "__main__":
         if opt.train:
             try:
                 with torch.autocast(
-                    device_type="cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+                    device_type="cuda" if torch.cuda.is_available() else "cpu"
                 ):  # This apparently solves everything
                     if trainer_config.skip_validation:
                         # Only perform the training, no FID computation.
