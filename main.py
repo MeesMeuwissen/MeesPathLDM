@@ -624,8 +624,7 @@ if __name__ == "__main__":
             save_weights_only=False,
         )
 
-        # define my own trainer:
-
+        # define my own trainer with id if resuming:
         if opt.resume:
             neptune_logger = NeptuneLogger(
                 api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyYTRjNmEyNy1lNTY5LTRmYTMtYjg5Yy03YjIxOTNhN2MwNGQifQ\=\=",
@@ -642,8 +641,15 @@ if __name__ == "__main__":
                 log_model_checkpoints=trainer_config.log_model_checkpoints,
             )
         # Log all hyperparams
-        neptune_logger.log_hyperparams(params=config)
-        neptune_logger.log_hyperparams(params=trainer_config)
+        neptune_logger.log_hyperparams(config)
+        neptune_logger.log_hyperparams(trainer_config)
+
+        if not opt.resume:
+            run_id = neptune_logger.experiment["sys/id"].fetch()
+            logdir = logdir + f"-{run_id}"
+        print(f"{logdir = }")
+
+        config.data["location"] = opt.location
 
         print(f"Max epochs: {trainer_config.max_epochs}")
 
@@ -655,12 +661,10 @@ if __name__ == "__main__":
             callbacks=[ThesisCallback(), checkpoint_callback],
             resume_from_checkpoint=trainer_resume_ckpt
         )
-        #trainer.logdir = logdir  ###
-        if not opt.resume:
-            run_id = trainer.logger.experiment["sys/id"].fetch()
-            logdir = logdir + f"-{run_id}"
-        print(f"{logdir = }")
-        config.data["location"] = opt.location
+
+        ckptdir = os.path.join(logdir, "checkpoints")
+        cfgdir = os.path.join(logdir, "configs")
+
         trainer.logger.experiment["location"] = opt.location
         trainer.logger.experiment["base"] = opt.base
 
