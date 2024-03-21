@@ -600,7 +600,7 @@ if __name__ == "__main__":
         cfgdir = os.path.join(logdir, "configs")
 
         trainer.logger.experiment["location"] = opt.location
-        trainer.logger.experiment["base"] = opt.base
+        trainer.logger.experiment["base"] = opt.base[0].split("/")[-1]
 
         assert config.data.location in [
             "local",
