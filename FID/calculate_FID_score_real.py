@@ -18,18 +18,18 @@ if __name__ == "__main__":
         device = "cpu"
 
     if subsample:
-        prefix = Path("/Users/Mees_1/Master Thesis/Aiosyn/data/first_patch_dataset_1.00_spacing/patches_subsample")
+        prefix = Path("/Users/Mees_1/MasterThesis/Aiosyn/data/dataset-17-bravo-1/patches_subsample")
         csv = pandas.read_csv(
-            "/Users/Mees_1/Master Thesis/Aiosyn/data/first_patch_dataset_1.00_spacing/patches_subsample.csv"
+            "/Users/Mees_1/MasterThesis/Aiosyn/data/dataset-17-bravo-1/patches_subsample.csv"
         )
 
-        file_path_output = os.getcwd() / Path("FID/FID_outputs/FID_subsample.npz")
+        file_path_output = os.getcwd() / Path("FID_outputs/FID_subsample_bravo_1.npz")
 
     else:
-        prefix = Path("/Users/Mees_1/Master Thesis/Aiosyn/data/first_patch_dataset_1.00_spacing/patches")
-        csv = pandas.read_csv("/Users/Mees_1/Master Thesis/Aiosyn/data/first_patch_dataset_1.00_spacing/patches.csv")
+        prefix = Path("/Users/Mees_1/MasterThesis/Aiosyn/data/dataset-17-bravo-1/patches")
+        csv = pandas.read_csv("/Users/Mees_1/MasterThesis/Aiosyn/data/dataset-17-bravo-1/patches.csv")
 
-        file_path_output = os.getcwd() / Path("FID/FID_outputs/FID_full.npz")
+        file_path_output = os.getcwd() / Path("FID_outputs/FID_full_bravo_1.npz")
 
     img_paths = []
 
