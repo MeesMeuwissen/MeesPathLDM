@@ -18,6 +18,7 @@ model:
     conditioning_key: crossattn
     monitor: val/loss
     use_ema: False
+    npz_path: FID_full.npz
     ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
     #pretrained unet model v2 (used by Srikar). Should be S3 url
     scheduler_config: # 1000 warmup steps

@@ -509,7 +509,7 @@ class LatentDiffusion(DDPM):
         scale_factor=1.0,
         scale_by_std=False,
         track_fid=True,
-        fid_path=None,
+        npz_path=None,
         *args,
         **kwargs,
     ):
@@ -550,7 +550,7 @@ class LatentDiffusion(DDPM):
         self.validation_step_outputs = []
         self.validation_step_inputs = []
         self.track_fid = track_fid
-        self.fid_path = fid_path
+        self.npz_path = npz_path
 
         if self.track_fid:
             block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
@@ -1550,7 +1550,7 @@ class LatentDiffusion(DDPM):
 
         if not self.real_stats:
             # Read the real mu, sigma once
-            path = self.fid_path or Path("FID/FID_outputs/FID_full.npz")
+            path = Path(f"FID/FID_outputs/{self.npz_path}")
 
             # read the npz file
 
@@ -1558,7 +1558,7 @@ class LatentDiffusion(DDPM):
                 with np.load(path) as f:
                     m1, s1 = f["mu"], f["sig"]
             except FileNotFoundError: #Necessary on aws
-                with np.load(Path("/home/aiosyn/code/generationLDM/FID/FID_outputs/FID_full.npz")) as f:
+                with np.load(Path(f"/home/aiosyn/code/generationLDM/FID/FID_outputs/{self.npz_path}")) as f:
                     m1, s1 = f["mu"], f["sig"]
                 print("Loaded mu, sig.")
             self.real_stats = [m1, s1]
