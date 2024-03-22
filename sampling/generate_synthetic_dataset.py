@@ -113,7 +113,7 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main(model_path, size, summary, nr_of_samples=1500, opt=None):
+def main(model_path, size, summary, depth_of_sampling, nr_of_samples=1500, opt=None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     )
@@ -124,7 +124,6 @@ def main(model_path, size, summary, nr_of_samples=1500, opt=None):
     print("Downloading model ...")
     download_model(model_path)
 
-    depth_of_sampling = 50  # Steps in the sampling process
     batch_size = 8  # 256 with batch size 4 crashes aws (out of memory)
     shape = [3, size, size]
 
@@ -221,5 +220,6 @@ if __name__ == "__main__":
     summary = opt.summary
     nr_of_samples = opt.number
     model_path = opt.model
+    depth_of_sampling = opt.depth_of_sampling
 
-    main(model_path, size=size, summary=summary, nr_of_samples=nr_of_samples, opt=opt)
+    main(model_path, size=size, summary=summary, depth_of_sampling=depth_of_sampling, nr_of_samples=nr_of_samples, opt=opt)
