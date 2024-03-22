@@ -19,7 +19,7 @@ import torchvision
 import torchvision.transforms as transforms
 from get_data import download_dataset
 from ldm.data.base import Txt2ImgIterableBaseDataset
-from ldm.util import instantiate_from_config, plot_images, sync_logdir
+from ldm.util import instantiate_from_config, plot_images, sync_logdir, CustomModelCheckpoint
 from omegaconf import OmegaConf
 from packaging import version
 from PIL import Image
@@ -577,7 +577,7 @@ if __name__ == "__main__":
         ckptdir = os.path.join(logdir, "checkpoints")
         cfgdir = os.path.join(logdir, "configs")
         print(f"{ckptdir = }")
-        checkpoint_callback = ModelCheckpoint(
+        checkpoint_callback = CustomModelCheckpoint(
             dirpath=ckptdir,
             save_top_k=1,
             save_last=True,

@@ -1,4 +1,5 @@
 import importlib
+import os
 
 import torch
 import numpy as np
@@ -6,6 +7,7 @@ import pytorch_lightning as pl
 import datetime
 from aiosynawsmodules.services.sso import set_sso_profile
 from aiosynawsmodules.services.s3 import upload_directory
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 from collections import abc
 from einops import rearrange
@@ -49,13 +51,41 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
 
 def sync_logdir(opt, trainer, logdir):
     print("Syncing logdir to", f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}")
-    print()
+    print(f"{logdir = }")
+    print(f"{os.listdir(logdir)}")
+    ckpt_dir = os.path.join(logdir, "/checkpoints")
+    print(f"ckptdir = {ckpt_dir}")
+    print(f"{os.listdir(ckpt_dir)} = ")
     # Sync the whole logdirectory with aws, so upload it and overwrite is ok
     if opt.location != 'remote':
         set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
     upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}",
                      overwrite=True)
     print("Done syncing logdir.")
+
+
+def proxy(p_object, callback=None): # real signature unknown; restored from __doc__
+    """
+    proxy(object[, callback]) -- create a proxy object that weakly
+    references 'object'.  'callback', if given, is called with a
+    reference to the proxy when 'object' is about to be finalized.
+    """
+    pass
+
+class CustomModelCheckpoint(ModelCheckpoint):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _save_checkpoint(self, trainer: "pl.Trainer", filepath: str) -> None:
+        # print(f"Saving to filepath: {filepath}")
+        trainer.save_checkpoint(filepath, self.save_weights_only)
+
+        self._last_global_step_saved = trainer.global_step
+
+        # notify loggers
+        if trainer.is_global_zero:
+            for logger in trainer.loggers:
+                logger.after_save_checkpoint(proxy(self))
 
 def log_txt_as_img(wh, xc, size=10):
     # wh a tuple of (width, height)
