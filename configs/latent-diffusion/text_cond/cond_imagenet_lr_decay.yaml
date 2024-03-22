@@ -13,7 +13,7 @@ model:
     channels: 3
     cond_stage_trainable: false #frozen clip encoder
     conditioning_key: crossattn
-    monitor: val/loss
+    monitor: FID
     use_ema: False
     npz_path: FID_full_bravo_1.npz
     scheduler_config: # 1000 warmup steps

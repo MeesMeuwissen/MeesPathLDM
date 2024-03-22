@@ -16,7 +16,7 @@ model:
     channels: 3
     cond_stage_trainable: false #frozen clip encoder
     conditioning_key: crossattn
-    monitor: val/loss
+    monitor: FID
     use_ema: False
     npz_path: FID_full_bravo_1.npz
     ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
