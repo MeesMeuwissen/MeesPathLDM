@@ -464,8 +464,6 @@ if __name__ == "__main__":
         date = date.strftime("%m-%d")
         logdir = f"logs/{date}-{opt.location}"
 
-    ckptdir = os.path.join(logdir, "checkpoints")
-    cfgdir = os.path.join(logdir, "configs")
     seed_everything(opt.seed)
 
     try:
@@ -550,13 +548,6 @@ if __name__ == "__main__":
         print("Model loaded.")
 
         print(f"Monitoring {model.monitor} for checkpoint metric.")
-        checkpoint_callback = ModelCheckpoint(
-            dirpath=ckptdir,
-            save_top_k=1,
-            save_last=True,
-            monitor=model.monitor,
-            save_weights_only=False,
-        )
 
         # define my own trainer with id if resuming:
         if opt.resume:
@@ -583,6 +574,16 @@ if __name__ == "__main__":
             logdir = logdir + f"-{run_id}"
         print(f"{logdir = }")
 
+        ckptdir = os.path.join(logdir, "checkpoints")
+        cfgdir = os.path.join(logdir, "configs")
+        print(f"{ckptdir = }")
+        checkpoint_callback = ModelCheckpoint(
+            dirpath=ckptdir,
+            save_top_k=1,
+            save_last=True,
+            monitor=model.monitor,
+            save_weights_only=False,
+        )
         config.data["location"] = opt.location
 
         print(f"Max epochs: {trainer_config.max_epochs}")
