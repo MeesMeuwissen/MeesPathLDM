@@ -2,7 +2,7 @@
 # vae fine-tuned on tcga dataset
 # Copied of plip_imagenet_finetune.yaml
 model:
-  base_learning_rate: 2.5e-3
+  base_learning_rate: 2.5e-4
   target: ldm.models.diffusion.ddpm.LatentDiffusion
   params:
     linear_start: 0.0015
@@ -22,13 +22,12 @@ model:
     ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
     #pretrained unet model v2 (used by Srikar). Should be S3 url
     scheduler_config: # 1000 warmup steps
-      target: ldm.lr_scheduler.LambdaLinearScheduler
+      target: ldm.lr_scheduler.CosineScheduler
       params:
-        warm_up_steps: [ 1000 ]
-        cycle_lengths: [ 10000000000000 ] # incredibly large number to prevent corner cases
-        f_start: [ 1.e-6 ]
-        f_max: [ 1. ]
-        f_min: [ 1. ]
+        lr_warmup_steps: 1000
+        lr_max: 1
+        lr_start: 1e-6
+        total_training_steps: 30000 #Based  on length of trainloader and max_epochs...
 
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
@@ -45,7 +44,6 @@ model:
         transformer_depth: 1
         context_dim: 512
         use_fp16: False # Half precision floats, default is float32
-
     first_stage_config:
       target: ldm.models.autoencoder.VQModelInterface
       params:
@@ -68,7 +66,6 @@ model:
           dropout: 0.0
         lossconfig:
           target: torch.nn.Identity
-
     cond_stage_config:
       target: ldm.modules.encoders.modules.FrozenCLIPEmbedder
       params:
@@ -77,8 +74,6 @@ model:
         # "openai/clip-vit-base-patch32" # regular clip as used by Srikar
         version: "vinid/plip" # plip
         max_length: 154
-
-
 data:
   already_downloaded: True # Only applies if running locally. If data is downloaded, you can speed things up.
   dataset_name: dataset-17-bravo-1/patches #the name of the dataset as it is on S3, under patch_datasets
@@ -92,25 +87,25 @@ data:
       params:
         config:
           subsample: False
-          root: dataset-17-bravo-1/patches #start without / !
+          root: dataset-17-bravo-1/patches
           csv: dataset-17-bravo-1/patches.csv
           split: train
           flip_p: 0.5
           size: 100000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
           crop_size: 256 # size of the images
-    validation: #For now, this is the same as the test split...
+    validation:
       target: ldm.data.text_cond.thesis_conditioning.KidneyConditional
       params:
         config:
           root: dataset-17-bravo-1/patches
           csv: dataset-17-bravo-1/patches.csv
           split: validation
-          size: 1500 # Nr of samples generated?
+          size: 1500
           crop_size: 256
 
 lightning:
   trainer:
-    max_epochs: 40
+    max_epochs: 30
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: 40 epoch conditional run starting at Srikar #Name of the run as used by Neptune
-    log_model_checkpoints: False # Tells Neptune to log the model ckpts or not. Turn off for testing
+    run_name: Conditional run with lr decay, starting at Srikar #Name of the run as used by Neptune
+    log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
