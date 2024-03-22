@@ -22,7 +22,7 @@ model:
         lr_warmup_steps: 1000
         lr_max: 1
         lr_start: 1e-6
-        total_training_steps: 30000 #Based  on length of trainloader and max_epochs...
+        total_training_steps: 30000 #Based  on length of trainloader and max_epochs... dataset-17-bravo-1 heeft lengte 13553
 
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
