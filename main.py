@@ -595,8 +595,8 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=1,
             logger=neptune_logger,
-            callbacks=[ThesisCallback(), checkpoint_callback],
-            resume_from_checkpoint=trainer_resume_ckpt
+            callbacks=[checkpoint_callback, ThesisCallback()],
+            resume_from_checkpoint=trainer_resume_ckpt,
         )
 
         ckptdir = os.path.join(logdir, "checkpoints")
@@ -658,7 +658,7 @@ if __name__ == "__main__":
         def melk(*args, **kwargs):
             # run all checkpoint hooks
             if trainer.global_rank == 0:
-                print("Summoning checkpoint.")
+                print("Summoning checkpoint from melk.")
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 print("ckpt path:", ckpt_path)
                 trainer.save_checkpoint(ckpt_path)
