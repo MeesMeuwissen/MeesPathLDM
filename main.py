@@ -321,8 +321,6 @@ class ThesisCallback(Callback):
         # hopefully progress
 
         print(f"Finished the epoch, global step:{trainer.global_step}.")
-        #Sync the whole logdirectory with aws, so upload it and overwrite is ok
-        sync_logdir(opt, trainer, logdir)
 
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
@@ -344,6 +342,10 @@ class ThesisCallback(Callback):
             name=f"Validation sample created at epoch {trainer.current_epoch} and step {trainer.global_step}.",
             description=f'Example of caption used: {val_inputs}',
         )
+        # Sync the whole logdirectory with aws, so upload it and overwrite is ok
+        if trainer.current_epoch != 0:
+            print("Syncing logdir from val epoch end...")
+            sync_logdir(opt, trainer, logdir)
 
 
 if __name__ == "__main__":

@@ -108,7 +108,9 @@ class CosineScheduler:
         self.total_training_steps = total_training_steps
         self.last_f = 0.0
         self.lr_increment = (self.lr_max - self.lr_start) / self.lr_warmup_steps
-    #total_training_steps = len(train_loader) * n_epoch
+    # total_training_steps = len(train_loader) * n_epoch
+    # dataset-17-bravo-1 has length 13553.
+    # There are 12 workers, does this also impact it? idk.
 
     def __call__(self, n, **kwargs):
         return self.schedule(n, **kwargs)

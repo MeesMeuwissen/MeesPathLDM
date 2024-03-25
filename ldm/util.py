@@ -51,8 +51,6 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
 
 def sync_logdir(opt, trainer, logdir):
     print("Syncing logdir to", f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}")
-    print(f"{logdir = }")
-    print(f"{os.listdir(logdir)}")
     # Sync the whole logdirectory with aws, so upload it and overwrite is ok
     if opt.location != 'remote':
         set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
@@ -74,7 +72,7 @@ class CustomModelCheckpoint(ModelCheckpoint):
         super().__init__(*args, **kwargs)
 
     def _save_checkpoint(self, trainer: "pl.Trainer", filepath: str) -> None:
-        # print(f"Saving to filepath: {filepath}")
+        print(f"Saving checkpoint to filepath: {filepath}")
         trainer.save_checkpoint(filepath, self.save_weights_only)
 
         self._last_global_step_saved = trainer.global_step
