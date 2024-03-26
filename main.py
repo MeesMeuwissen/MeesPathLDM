@@ -19,7 +19,7 @@ import torchvision
 import torchvision.transforms as transforms
 from get_data import download_dataset
 from ldm.data.base import Txt2ImgIterableBaseDataset
-from ldm.util import instantiate_from_config, plot_images, sync_logdir, CustomModelCheckpoint
+from ldm.util import instantiate_from_config, plot_images, sync_logdir, CustomModelCheckpoint, attempt_key_read
 from omegaconf import OmegaConf
 from packaging import version
 from PIL import Image
@@ -601,6 +601,17 @@ if __name__ == "__main__":
             resume_from_checkpoint=trainer_resume_ckpt,
         )
 
+        if attempt_key_read(trainer_config, 'overfit', False):
+            print("OVERFITTING ONE BATCH!")
+            trainer = Trainer(
+            max_epochs=trainer_config.max_epochs,
+            overfit_batches=1,
+            accelerator="gpu",
+            devices=1,
+            logger=neptune_logger,
+            callbacks=[checkpoint_callback, ThesisCallback()],
+            resume_from_checkpoint=trainer_resume_ckpt,
+        )
         ckptdir = os.path.join(logdir, "checkpoints")
         cfgdir = os.path.join(logdir, "configs")
 
