@@ -312,7 +312,7 @@ class ThesisCallback(Callback):
         lr = trainer.model.optimizers().param_groups[0]["lr"]
         trainer.logger.log_metrics({"lr-abs": lr}, step=trainer.global_step)
         # log the batch every 500 batches ?
-        if batch_idx % 1000 == 0:
+        if trainer.global_step % 100 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
         # print(f"Logged the batch to batch_samples/{split}/{batch_idx}")
 
@@ -324,6 +324,11 @@ class ThesisCallback(Callback):
         if opt.location == 'remote':
             ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
+        else:
+            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
+            trainer.save_checkpoint(ckpt_path, weights_only=False)
+            print(f"Saved checkpoint at {ckpt_path}")
+            assert False
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
         pass
@@ -345,7 +350,7 @@ class ThesisCallback(Callback):
             description=f'Example of caption used: {val_inputs}',
         )
         # Sync the whole logdirectory with aws, so upload it and overwrite is ok
-        if trainer.current_epoch != 0:
+        if trainer.current_epoch % 30 == 0:
             print("Syncing logdir from val epoch end...")
             sync_logdir(opt, trainer, logdir)
 
