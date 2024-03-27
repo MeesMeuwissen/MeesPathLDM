@@ -321,14 +321,15 @@ class ThesisCallback(Callback):
         # hopefully progress
 
         print(f"Finished the epoch, global step:{trainer.global_step}.")
-        if opt.location == 'remote':
-            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
-            trainer.save_checkpoint(ckpt_path, weights_only=False)
-        else:
-            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
-            trainer.save_checkpoint(ckpt_path, weights_only=False)
-            print(f"Saved checkpoint at {ckpt_path}")
-            assert False
+        if trainer.current_epoch % 20 ==0:
+            if opt.location == 'remote':
+                ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
+                trainer.save_checkpoint(ckpt_path, weights_only=False)
+            else:
+                ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
+                trainer.save_checkpoint(ckpt_path, weights_only=False)
+                print(f"Saved checkpoint at {ckpt_path}")
+                assert False
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
         pass
