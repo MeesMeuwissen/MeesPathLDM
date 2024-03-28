@@ -114,7 +114,6 @@ class KidneyConditional(KidneyUnconditional):
 
         img, msk = self.random_flips(img, msk, self.flip_p)
         img = self.transform(img)
-        msk = self.transform(msk)
 
         if img.shape[1] > self.crop_size:
             img, msk = self.get_random_crop(img, msk, self.crop_size)
@@ -167,7 +166,6 @@ class KidneyConditional(KidneyUnconditional):
 
         return caption
 
-
     def random_flips(self, img, msk, p):
         if torch.rand(1) < p:
             img = F.hflip(img)
@@ -193,6 +191,41 @@ class KidneyConditional(KidneyUnconditional):
         cropped_image = image[y:y + crop_size, x:x + crop_size]
         cropped_mask = mask[y:y + crop_size, x:x + crop_size]
         return cropped_image, cropped_mask
+
+class RatKidneyConditional(KidneyConditional):
+    # Size of rat-tissue dataset: 109923 patches
+    def create_caption(self, mask):
+        """
+        {'Arteries': 1},
+        {'Atrophic tubuli': 2},
+        {'Tubuli': 3},
+        {'Glomeruli': 4},
+        {'Sclerotic glomeruli': 5},
+        {'Background': 6},
+        {'Dilated tubuli': 7}]
+        """
+        pixels = np.array(mask).ravel()
+        hist, bins = np.histogram(pixels, bins=np.arange(0, 9))  # 8 classes, ignore the class_0
+        probabilities = hist / len(pixels) # Probability of a random pixel being a certain class
+
+        classes = ['White background, should be ignored', 'Arteries', 'Atrophic Tubuli', 'Tubuli', 'Glomeruli', 'Sclerotic Glomeruli', 'other kidney tissue' ,
+                   'Dilated Tubuli']
+        thresholds = {'low': 0.2, 'medium': 0.4}  # Define thresholds for low, medium, and high prevalence
+
+        caption = "This image showcases various types of tissue structures found in renal tissue. \n"
+        for i, prob in enumerate(probabilities):
+            if i == 0:
+                continue #First value should be ignored
+            if prob == 0:
+                continue  # Skip classes with zero probability
+            elif prob < thresholds['low']:
+                caption += f"The image shows a low amount of {classes[i]}.\n"
+            elif prob < thresholds['medium']:
+                caption += f"The prevalence of {classes[i]} is medium.\n"
+            else:
+                caption += f"There is a lot of {classes[i]} visible in the image.\n"
+
+        return caption
 
 class HandwrittenDigits(Dataset):
     def __init__(self, config=None):

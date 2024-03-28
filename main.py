@@ -311,8 +311,8 @@ class ThesisCallback(Callback):
     ) -> None:
         lr = trainer.model.optimizers().param_groups[0]["lr"]
         trainer.logger.log_metrics({"lr-abs": lr}, step=trainer.global_step)
-        # log the batch every 500 batches ?
-        if trainer.global_step % 100 == 0:
+        # log the batch every 2000 batches ?
+        if trainer.global_step % 2000 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
         # print(f"Logged the batch to batch_samples/{split}/{batch_idx}")
 
@@ -321,15 +321,13 @@ class ThesisCallback(Callback):
         # hopefully progress
 
         print(f"Finished the epoch, global step:{trainer.global_step}.")
-        if trainer.current_epoch % 20 ==0:
-            if opt.location == 'remote':
-                ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
-                trainer.save_checkpoint(ckpt_path, weights_only=False)
-            else:
-                ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
-                trainer.save_checkpoint(ckpt_path, weights_only=False)
-                print(f"Saved checkpoint at {ckpt_path}")
-                assert False
+        if opt.location == 'remote':
+            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
+            trainer.save_checkpoint(ckpt_path, weights_only=False)
+        else:
+            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
+            trainer.save_checkpoint(ckpt_path, weights_only=False)
+            print(f"Saved checkpoint at {ckpt_path}")
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
         pass
@@ -338,7 +336,7 @@ class ThesisCallback(Callback):
         print("Starting validation ...")
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        samples = trainer.model.validation_step_outputs[0]  # A batch of 8 imgs I think, it has shape (8,3,256,256), dtype uint8)
+        samples = trainer.model.validation_step_outputs[0]  # A batch of 8 imgs, it has shape (8,3,256,256), dtype uint8)
         samples_t = torch.from_numpy(samples / 255.0)
         val_inputs = trainer.model.validation_step_inputs[0]
 
@@ -351,9 +349,8 @@ class ThesisCallback(Callback):
             description=f'Example of caption used: {val_inputs}',
         )
         # Sync the whole logdirectory with aws, so upload it and overwrite is ok
-        if trainer.current_epoch % 30 == 0:
-            print("Syncing logdir from val epoch end...")
-            sync_logdir(opt, trainer, logdir)
+        print("Syncing logdir from val epoch end...")
+        sync_logdir(opt, trainer, logdir)
 
 
 if __name__ == "__main__":
