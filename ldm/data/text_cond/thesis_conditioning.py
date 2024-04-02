@@ -208,7 +208,7 @@ class RatKidneyConditional(KidneyConditional):
         hist, bins = np.histogram(pixels, bins=np.arange(0, 9))  # 8 classes, ignore the class_0
         probabilities = hist / len(pixels) # Probability of a random pixel being a certain class
 
-        classes = ['White background, should be ignored', 'Arteries', 'Atrophic Tubuli', 'Tubuli', 'Glomeruli', 'Sclerotic Glomeruli', 'other kidney tissue' ,
+        classes = ['White background, should be ignored', 'Arteries', 'Atrophic Tubuli', 'Tubuli', 'Glomeruli', 'Sclerotic Glomeruli', 'other kidney tissue',
                    'Dilated Tubuli']
         thresholds = {'low': 0.2, 'medium': 0.4}  # Define thresholds for low, medium, and high prevalence
 
@@ -226,6 +226,32 @@ class RatKidneyConditional(KidneyConditional):
                 caption += f"There is a lot of {classes[i]} visible in the image.\n"
 
         return caption
+
+
+class OverfitOneBatch(RatKidneyConditional):
+
+    def __getitem__(self, idx):
+
+        idx = idx % 16 # Ensures all the idx's are between 0 and 16 (so 15 at most)
+
+        img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
+        msk_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "msk")  # Read the msk part
+
+        img_path = os.path.join(self.data_dir, img_path)
+        msk_path = os.path.join(self.data_dir, msk_path)
+        img = Image.open(img_path).convert("RGB")
+        msk = Image.open(msk_path)
+
+        img, msk = self.random_flips(img, msk, self.flip_p)
+        img = self.transform(img)
+
+        if img.shape[1] > self.crop_size:
+            img, msk = self.get_random_crop(img, msk, self.crop_size)
+
+        caption = self.create_caption(msk)
+        # should be HWC
+        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
+        return {"image": img, "caption": caption}
 
 class HandwrittenDigits(Dataset):
     def __init__(self, config=None):

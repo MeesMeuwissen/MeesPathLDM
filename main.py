@@ -312,7 +312,7 @@ class ThesisCallback(Callback):
         lr = trainer.model.optimizers().param_groups[0]["lr"]
         trainer.logger.log_metrics({"lr-abs": lr}, step=trainer.global_step)
         # log the batch every 2000 batches ?
-        if trainer.global_step % 2000 == 0:
+        if trainer.global_step % 1000 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
         # print(f"Logged the batch to batch_samples/{split}/{batch_idx}")
 
