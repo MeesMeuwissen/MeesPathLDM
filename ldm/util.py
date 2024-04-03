@@ -46,7 +46,10 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
             ax.imshow(image) # Images are HWC
         ax.axis('off')  # Hide axis
 
-    trainer.logger.experiment[f"batch_samples/epoch_{trainer.current_epoch}/{batch_idx}"].append(fig, name=trainer.logger.name , description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}")
+    trainer.logger.experiment[f"batch_samples"].log(
+        fig,
+        name=trainer.logger.name ,
+        description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}, batch_idx = {batch_idx}")
     plt.close(fig)
 
 def sync_logdir(opt, trainer, logdir):
