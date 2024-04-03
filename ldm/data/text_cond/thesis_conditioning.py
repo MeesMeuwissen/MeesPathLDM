@@ -114,6 +114,7 @@ class KidneyConditional(KidneyUnconditional):
 
         img, msk = self.random_flips(img, msk, self.flip_p)
         img = self.transform(img)
+        msk = self.transform(msk)
 
         if img.shape[1] > self.crop_size:
             img, msk = self.get_random_crop(img, msk, self.crop_size)
@@ -232,7 +233,7 @@ class OverfitOneBatch(RatKidneyConditional):
 
     def __getitem__(self, idx):
 
-        idx = idx % 16 # Ensures all the idx's are between 0 and 16 (so 15 at most)
+        idx = 20 # Always the same image, no matter idx
 
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
         msk_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "msk")  # Read the msk part
@@ -242,7 +243,6 @@ class OverfitOneBatch(RatKidneyConditional):
         img = Image.open(img_path).convert("RGB")
         msk = Image.open(msk_path)
 
-        img, msk = self.random_flips(img, msk, self.flip_p)
         img = self.transform(img)
 
         if img.shape[1] > self.crop_size:
