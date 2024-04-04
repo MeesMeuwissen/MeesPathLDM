@@ -77,19 +77,19 @@ class KidneyUnconditional(Dataset):
 
     def get_random_crop(self, image, crop_size):
         # Get the dimensions of the original image
-        width, height = image.size
+        width, height = image.shape[0], image.shape[1]
 
         # Calculate the maximum valid coordinates for the top-left corner of the crop
         max_x = width - crop_size
         max_y = height - crop_size
 
         # Generate random coordinates for the top-left corner of the crop
-        x = random.randint(0, max_x)
-        y = random.randint(0, max_y)
+        top = torch.randint(0, max_x + 1, size=(1,))
+        left = torch.randint(0, max_y + 1, size=(1,))
 
-        # Perform the crop
-        cropped_image = image.crop((x, y, x + crop_size, y + crop_size))
-        return cropped_image,
+        # Crop the image
+        cropped_image = F.crop(image.permute(2, 0, 1), top, left, crop_size, crop_size).permute(1,2,0)
+        return cropped_image
 
     def random_flips(self, img, p):
         if torch.rand(1) < p:

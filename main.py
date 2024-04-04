@@ -441,22 +441,20 @@ if __name__ == "__main__":
         if opt.location in ['local', 'maclocal']:
             set_sso_profile(profile_name="aws-aiosyn-data", region_name="eu-west-1")
 
-        #Example opt.resume arg: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-19-remote-GEN-353/
-        logdir = "logs/"+opt.resume.split("/")[-1]
+        #Example opt.resume arg: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-19-remote-GEN-353/checkpoints/xyz.ckpt
+        logdir = "logs/"+opt.resume.split("/")[-3]
         run_id = logdir.split('-')[-1]
         run_name = 'GEN-'+ run_id
-
-        print(f"Resuming run {run_name}. Downloading the logdir from S3 ({opt.resume}) to local ({logdir})")
-        download_directory(
-            remote_s3_url=opt.resume,
-            local_dir=logdir,
-            overwrite=True,
-            recursive=True,
+        print(f"Resuming run {run_name}. Downloading the ckpt from S3 ({opt.resume}) to local ({logdir})")
+        download_file(
+            remote_path=opt.resume,
+            local_path=logdir + "/checkpoints/last.ckpt",
         )
 
         print("Done")
         #Set the checkpoint to the last one in the logdir
-        resume_ckpt = opt.resume + "/checkpoints/last.ckpt"
+        #resume_ckpt = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt" #Hardcoded for now
+        resume_ckpt = logdir + "checkpoints/last.ckpt"
     else:
         if opt.name:
             name = "_" + opt.name
@@ -604,17 +602,6 @@ if __name__ == "__main__":
             resume_from_checkpoint=trainer_resume_ckpt,
         )
 
-        if attempt_key_read(trainer_config, 'overfit', False):
-            print("OVERFITTING ONE BATCH!")
-            trainer = Trainer(
-            max_epochs=trainer_config.max_epochs,
-            overfit_batches=1,
-            accelerator="gpu",
-            devices=1,
-            logger=neptune_logger,
-            callbacks=[checkpoint_callback, ThesisCallback()],
-            resume_from_checkpoint=trainer_resume_ckpt,
-        )
         ckptdir = os.path.join(logdir, "checkpoints")
         cfgdir = os.path.join(logdir, "configs")
 

@@ -234,9 +234,9 @@ class DDPM(pl.LightningModule):
                     print(f"{context}: Restored training weights")
 
     def init_from_ckpt(self, path, ignore_keys=list(), only_model=False):
-        sd = torch.load(path, map_location="cpu")
-        if "state_dict" in list(sd.keys()):
-            sd = sd["state_dict"]
+        ckpt = torch.load(path, map_location="cpu")
+        if "state_dict" in list(ckpt.keys()):
+            sd = ckpt["state_dict"]
         keys = list(sd.keys())
         for k in keys:
             for ik in ignore_keys:
@@ -521,7 +521,7 @@ class LatentDiffusion(DDPM):
             conditioning_key = "concat" if concat_mode else "crossattn"
         if cond_stage_config == "__is_unconditional__":
             conditioning_key = None
-        ckpt_path = kwargs.pop("ckpt_path", None)
+        self.ckpt_path = kwargs.pop("ckpt_path", None)
         ignore_keys = kwargs.pop("ignore_keys", [])
         super().__init__(conditioning_key=conditioning_key, *args, **kwargs)
         self.concat_mode = concat_mode
@@ -543,8 +543,8 @@ class LatentDiffusion(DDPM):
         self.n_classes = cond_stage_config.get("params", {}).get("n_classes", None)
 
         self.restarted_from_ckpt = False
-        if ckpt_path is not None:
-            self.init_from_ckpt(ckpt_path, ignore_keys)
+        if self.ckpt_path is not None:
+            self.init_from_ckpt(self.ckpt_path, ignore_keys)
             self.restarted_from_ckpt = True
 
         self.validation_step_outputs = []
@@ -1802,6 +1802,20 @@ class LatentDiffusion(DDPM):
                     "frequency": 1,
                 }
             ]
+
+            # Misschien hier de scheduler state dict inladen ?
+            if self.restarted_from_ckpt:
+                print("Loading scheduler state dict in configure_optimizers ...")
+                ckpt = torch.load(self.ckpt_path, map_location='cpu')
+                print(len(ckpt['lr_schedulers']))
+                lr_sd = ckpt['lr_schedulers'][0]
+                scheduler[0]['scheduler'].load_state_dict(lr_sd)
+
+                print("Loading optimizer state dict ... ")
+                opt_sd = ckpt["optimizer_states"][0]
+                opt.load_state_dict(opt_sd)
+
+                print("Done")
             return [opt], scheduler
         return opt
 
