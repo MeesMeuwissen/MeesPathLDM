@@ -514,7 +514,11 @@ if __name__ == "__main__":
                 # Set the model ckpt to the last one from prev run.
             if opt.location in ['remote']:
                 config.model.params.ckpt_path = resume_ckpt
-                trainer_resume_ckpt = "/home/aiosyn/model.ckpt"
+                trainer_resume_ckpt = resume_ckpt
+            elif opt.location in ['maclocal']:
+                #Dit aanpassen als je local resumet
+                config.model.params.ckpt_path = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt"
+                trainer_resume_ckpt = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt"
         else:
             trainer_resume_ckpt = None
 
