@@ -336,7 +336,7 @@ class ThesisCallback(Callback):
         print("Starting validation ...")
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        samples = trainer.model.validation_step_outputs[0]  # A batch of 8 imgs, it has shape (8,3,256,256), dtype uint8)
+        samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,256,256), dtype uint8)
         samples_t = torch.from_numpy(samples / 255.0)
         val_inputs = trainer.model.validation_step_inputs[0]
 
@@ -518,7 +518,7 @@ if __name__ == "__main__":
         else:
             trainer_resume_ckpt = None
 
-        if opt.location == "remote":
+        if opt.location == "remote" and not opt.resume:
             print("Running remotely. Downloading pretrained models ...")
 
             try:
