@@ -330,7 +330,8 @@ class ThesisCallback(Callback):
             print(f"Saved checkpoint at {ckpt_path}")
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
-        pass
+        lr = trainer.model.optimizers().param_groups[0]["lr"]
+        print(f"{lr = }, {trainer.current_epoch = }")
 
     def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         print("Starting validation ...")
