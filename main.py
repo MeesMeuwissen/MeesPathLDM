@@ -454,7 +454,7 @@ if __name__ == "__main__":
         print("Done")
         #Set the checkpoint to the last one in the logdir
         #resume_ckpt = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt" #Hardcoded for now
-        resume_ckpt = logdir + "checkpoints/last.ckpt"
+        resume_ckpt = logdir + "/checkpoints/last.ckpt"
     else:
         if opt.name:
             name = "_" + opt.name
