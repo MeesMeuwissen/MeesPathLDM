@@ -1805,20 +1805,6 @@ class LatentDiffusion(DDPM):
                     "frequency": 1,
                 }
             ]
-
-            # Misschien hier de scheduler state dict inladen ?
-            # if self.restarted_from_ckpt:
-            #     print("Loading scheduler state dict in configure_optimizers ...")
-            #     ckpt = torch.load(self.ckpt_path, map_location='cpu')
-            #     print(len(ckpt['lr_schedulers']))
-            #     lr_sd = ckpt['lr_schedulers'][0]
-            #     scheduler[0]['scheduler'].load_state_dict(lr_sd)
-            #
-            #     print("Loading optimizer state dict ... ")
-            #     opt_sd = ckpt["optimizer_states"][0]
-            #     opt.load_state_dict(opt_sd)
-            #
-            #     print("Done")
             return [opt], scheduler
         return opt
 
