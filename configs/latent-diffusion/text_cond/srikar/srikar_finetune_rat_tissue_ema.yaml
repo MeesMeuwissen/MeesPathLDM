@@ -1,0 +1,104 @@
+model:
+  base_learning_rate: 2.5e-4
+  target: ldm.models.diffusion.ddpm.LatentDiffusion
+  params:
+    linear_start: 0.0015
+    linear_end: 0.0195
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    first_stage_key: image
+    cond_stage_key: caption
+    image_size: 64
+    channels: 3
+    cond_stage_trainable: false #frozen clip encoder
+    conditioning_key: crossattn
+    monitor: FID
+    use_ema: True
+    npz_path: FID_rat_full.npz
+    ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
+    scheduler_config: # 1000 warmup steps
+      target: ldm.lr_scheduler.CosineScheduler
+      params:
+        lr_warmup_steps: 3000
+        lr_max: 1
+        lr_start: 1e-6
+        total_training_steps: 93_750 # Based  on length of trainloader and max_epochs, as well as batch size...
+          # dataset-17-bravo-1 heeft lengte 13553
+          # rat-tissue heeft lengte 109923
+    unet_config:
+      target: ldm.modules.diffusionmodules.openaimodel.UNetModel
+      params:
+        image_size: 64
+        in_channels: 3
+        out_channels: 3
+        model_channels: 192
+        attention_resolutions: [8, 4, 2]
+        num_res_blocks: 2
+        channel_mult: [ 1,2,3,5 ]
+        num_heads: 1
+        use_spatial_transformer: True
+        transformer_depth: 1
+        context_dim: 512
+        use_fp16: False # Half precision floats, default is float32
+    first_stage_config:
+      target: ldm.models.autoencoder.VQModelInterface
+      params:
+        embed_dim: 3
+        n_embed: 8192
+        ddconfig:
+          double_z: false
+          z_channels: 3
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult:
+          - 1
+          - 2
+          - 4
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+    cond_stage_config:
+      target: ldm.modules.encoders.modules.FrozenCLIPEmbedder
+      params:
+        # plip is the pathology clip model
+        # plip- model: vinid/plip
+        #openai/clip-vit-base-patch32" # regular clip as used by Srikar
+        version: "vinid/plip" # regular clip as used by Srikar
+        max_length: 154
+data:
+  already_downloaded: True # Only applies if running locally. If data is downloaded, you can speed things up.
+  dataset_name: rat-tissue/patches #the name of the dataset as it is on S3, under patch_datasets
+  target: main.DataModuleFromConfig
+  params:
+    batch_size: 16
+    num_workers: 12
+    wrap: false
+    train:
+      target: ldm.data.text_cond.thesis_conditioning.RatKidneyConditional
+      params:
+        config:
+          subsample: False
+          root: rat-tissue/patches
+          csv: rat-tissue/patches.csv
+          flip_p: 0.5
+          size: 50_000 #rat-tissue has 109923 patches, so 100k is not even enough...
+          crop_size: 256 # size of the images
+    validation:
+      target: ldm.data.text_cond.thesis_conditioning.RatKidneyConditional
+      params:
+        config:
+          root: rat-tissue/patches
+          csv: rat-tissue/patches.csv
+          size: 1500
+          crop_size: 256
+lightning:
+  trainer:
+    max_epochs: 30
+    skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
+    run_name: Finetuning srikar with rat tissue, 30 epochs #Name of the run as used by Neptune
+    log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
