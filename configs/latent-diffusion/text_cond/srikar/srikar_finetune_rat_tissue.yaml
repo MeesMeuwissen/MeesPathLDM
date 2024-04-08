@@ -23,7 +23,7 @@ model:
         lr_warmup_steps: 3000
         lr_max: 1
         lr_start: 1e-6
-        total_training_steps: 93.750 # Based  on length of trainloader and max_epochs, as well as batch size...
+        total_training_steps: 93_750 # Based  on length of trainloader and max_epochs, as well as batch size...
           # dataset-17-bravo-1 heeft lengte 13553
           # rat-tissue heeft lengte 109923
     unet_config:
