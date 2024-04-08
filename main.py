@@ -605,6 +605,8 @@ if __name__ == "__main__":
             logger=neptune_logger,
             callbacks=[checkpoint_callback, ThesisCallback()],
             resume_from_checkpoint=trainer_resume_ckpt,
+            #num_sanity_val_steps=0, # DIT skipt de validation sanity check. Default = 2
+            auto_scale_batch_size=True
         )
 
         ckptdir = os.path.join(logdir, "checkpoints")
