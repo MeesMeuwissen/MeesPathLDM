@@ -16,6 +16,7 @@ from pytorch_fid.fid_score import calculate_activation_statistics, calculate_fre
 from pytorch_fid.inception import InceptionV3
 from torchvision import transforms
 from tqdm import tqdm
+from ldm.data.text_cond.thesis_conditioning import RatKidneyConditional
 
 from aiosynawsmodules.services.s3 import download_file, upload_file
 from aiosynawsmodules.services.sso import set_sso_profile
@@ -61,6 +62,9 @@ def get_parser():
     )
     parser.add_argument(
         "-a", "--all", type=bool, const=True, default=True, nargs="?", help="Upload a zip of all images to S3"
+    )
+    parser.add_argument(
+        "-f", "--FID_path", type=bool, const=True, default=True, nargs="?", help="Path of FID file for the dataset."
     )
     return parser
 
@@ -113,7 +117,7 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main(model_path, size, summary, depth_of_sampling, nr_of_samples=1500, opt=None):
+def main(model_path, size, summary, FID_path, depth_of_sampling, nr_of_samples=1500, opt=None):
     device = torch.device(
         "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
     )
@@ -142,7 +146,7 @@ def main(model_path, size, summary, depth_of_sampling, nr_of_samples=1500, opt=N
             path = save_sample(sample, output_dir)
             img_paths.append(path)
 
-    fid = calculate_FID(paths=img_paths, device=device)
+    fid = calculate_FID(paths=img_paths, FID_path=FID_path,  device=device)
     # save some metadata to a file in output dir as well.
 
     with open(output_dir + "/metadata.txt", "w") as f:
@@ -181,10 +185,10 @@ def zip_directory(directory, zip_filename):
             zipf.write(file, os.path.relpath(file, directory))
 
 
-def calculate_FID(paths, device):
+def calculate_FID(paths, FID_path, device):
     model = InceptionV3().to(device)
     mu_fake, sig_fake = calculate_activation_statistics(paths, model, device=device)
-    with np.load(Path("/home/aiosyn/code/generationLDM/FID/FID_outputs/FID_full.npz")) as f:
+    with np.load(Path(f"/home/aiosyn/code/generationLDM/FID/FID_outputs/{FID_path}")) as f:
         m1, s1 = f["mu"], f["sig"]
 
     fid = calculate_frechet_distance(m1, s1, mu_fake, sig_fake)
@@ -221,5 +225,6 @@ if __name__ == "__main__":
     nr_of_samples = opt.number
     model_path = opt.model
     depth_of_sampling = opt.depth_of_sampling
+    FID_path = opt.FID_path
 
-    main(model_path, size=size, summary=summary, depth_of_sampling=depth_of_sampling, nr_of_samples=nr_of_samples, opt=opt)
+    main(model_path, size=size, summary=summary, FID_path=FID_path,  depth_of_sampling=depth_of_sampling, nr_of_samples=nr_of_samples, opt=opt)

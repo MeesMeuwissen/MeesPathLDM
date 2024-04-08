@@ -58,13 +58,12 @@ def download_dataset_from_s3(
 
 # s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/
 
-def download_dataset(dataset_name: str, location: str = "local", subsample: bool = True) -> None:
+def download_dataset(dataset_name: str, location: str = "local") -> None:
     '''
 
     Args:
         dataset_name: name of the dataset on aws
         location: local or remote
-        subsample: whether to only download the subsample of the datasets
 
     '''
     # Example dataset_name: "first_patch_dataset_1.00_spacing/patches"
@@ -86,7 +85,7 @@ def download_dataset(dataset_name: str, location: str = "local", subsample: bool
     elif location == "remote":
         save_location = "/home/aiosyn/data"
 
-    print("Location:", location, "\nSave location:", save_location)
+    #print("Location:", location, "\nSave location:", save_location)
     print("Downloading data, both full and subsample ...")
     download_dataset_from_s3(
         dataset_name=dataset_name,

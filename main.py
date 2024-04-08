@@ -627,8 +627,7 @@ if __name__ == "__main__":
         else:
             download_dataset(
                 dataset_name=config.data.dataset_name,
-                location=config.data.location,
-                subsample=config.data.params.train.params.config.subsample,
+                location=config.data.location
             )
         # data
         data = instantiate_from_config(config.data)
