@@ -114,7 +114,6 @@ class KidneyConditional(KidneyUnconditional):
 
         img, msk = self.random_flips(img, msk, self.flip_p)
         img = self.transform(img)
-        msk = self.transform(msk)
 
         if img.shape[1] > self.crop_size:
             img, msk = self.get_random_crop(img, msk, self.crop_size)
