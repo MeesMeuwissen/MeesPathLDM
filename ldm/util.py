@@ -52,13 +52,13 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
         description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}, batch_idx = {batch_idx}")
     plt.close(fig)
 
-def sync_logdir(opt, trainer, logdir):
+def sync_logdir(opt, trainer, logdir, overwrite=False):
     print("Syncing logdir to", f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}")
     # Sync the whole logdirectory with aws, so upload it and overwrite is ok
     if opt.location != 'remote':
         set_sso_profile("aws-aiosyn-data", region_name="eu-west-1")
     upload_directory(logdir, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}",
-                     overwrite=True)
+                     overwrite=overwrite)
     print("Done syncing logdir.")
 
 

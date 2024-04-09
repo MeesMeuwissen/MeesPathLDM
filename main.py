@@ -12,6 +12,7 @@ from typing import Any
 
 import neptune as neptune
 import boto3
+from aiosynawsmodules.services.s3 import upload_file
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -324,6 +325,8 @@ class ThesisCallback(Callback):
         if opt.location == 'remote':
             ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
+            print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
+            upload_file(ckpt_path, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/end_epoch_{trainer.current_epoch}.ckpt")
         else:
             ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
@@ -597,6 +600,7 @@ if __name__ == "__main__":
         config.data["location"] = opt.location
 
         print(f"Max epochs: {trainer_config.max_epochs}")
+        print(f" {opt.resume = }")
 
         trainer = Trainer(
             max_epochs=trainer_config.max_epochs,
@@ -671,7 +675,7 @@ if __name__ == "__main__":
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 print("ckpt path:", ckpt_path)
                 trainer.save_checkpoint(ckpt_path)
-                sync_logdir(opt, trainer, logdir)  # Sync logdir after training finishes
+                sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
 
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
@@ -695,7 +699,7 @@ if __name__ == "__main__":
                     else:
                         trainer.fit(model, data)
                     print("Trainer has fitted the model.")
-                    sync_logdir(opt, trainer, logdir) #Sync logdir after training finishes
+                    sync_logdir(opt, trainer, logdir, overwrite=True) #Sync logdir after training finishes
                     print(f"Best model path: {checkpoint_callback.best_model_path}")
                     print(f"Best model score: {checkpoint_callback.best_model_score}")
                     trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
