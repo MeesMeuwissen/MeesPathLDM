@@ -113,7 +113,12 @@ class KidneyConditional(KidneyUnconditional):
         msk = Image.open(msk_path)
 
         img, msk = self.random_flips(img, msk, self.flip_p)
-        img = self.transform(img)
+
+        img = F.pil_to_tensor(img)
+        img = permute_channels(img)
+
+        # Normalize images to [-1,1]
+        img = (img / 127.5 - 1).to(torch.float32)
 
         if img.shape[1] > self.crop_size:
             img, msk = self.get_random_crop(img, msk, self.crop_size)
