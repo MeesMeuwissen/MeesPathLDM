@@ -15,7 +15,7 @@ model:
     conditioning_key: crossattn
     monitor: FID
     use_ema: False
-    npz_path: FID_full.npz
+    npz_path: FID_rat_overfit_20.npz
     ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/04-03-remote-GEN-428/checkpoints/last.ckpt"
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.CosineScheduler

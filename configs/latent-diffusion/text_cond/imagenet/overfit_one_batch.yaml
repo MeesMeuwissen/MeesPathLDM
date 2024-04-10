@@ -15,7 +15,7 @@ model:
     conditioning_key: crossattn
     monitor: FID
     use_ema: False
-    npz_path: FID_rat_full.npz
+    npz_path: FID_rat_overfit_20.npz
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.CosineScheduler
       params:
