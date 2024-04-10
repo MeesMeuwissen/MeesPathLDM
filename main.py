@@ -326,7 +326,7 @@ class ThesisCallback(Callback):
             ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
             print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
-            upload_file(ckpt_path, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/end_epoch_{trainer.current_epoch}.ckpt")
+            upload_file(ckpt_path, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/checkpoints/end_epoch_{trainer.current_epoch}.ckpt")
         else:
             ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
