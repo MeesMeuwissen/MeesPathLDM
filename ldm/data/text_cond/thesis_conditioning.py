@@ -247,7 +247,11 @@ class OverfitOneBatch(RatKidneyConditional):
         img = Image.open(img_path).convert("RGB")
         msk = Image.open(msk_path)
 
-        img = self.transform(img)
+        img = F.pil_to_tensor(img)
+        img = permute_channels(img)
+
+        # Normalize images to [-1,1]
+        img = (img / 127.5 - 1).to(torch.float32)
 
         if img.shape[1] > self.crop_size:
             img, msk = self.get_random_crop(img, msk, self.crop_size)
