@@ -43,6 +43,7 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
         # Display an image
         if i < len(images):
             image = images[i].cpu().detach().numpy()
+            image = (image + 1) / 2 # Imgs are normalized to [-1,1], so correct this for imshow
             ax.imshow(image) # Images are HWC
         ax.axis('off')  # Hide axis
 
