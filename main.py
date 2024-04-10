@@ -315,7 +315,16 @@ class ThesisCallback(Callback):
         # log the batch every 2000 batches ?
         if trainer.global_step % 1000 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
-        # print(f"Logged the batch to batch_samples/{split}/{batch_idx}")
+
+        # Save a ckpt every 625 batches, which is every 10k patches when batch size is 16:
+        if opt.location == "remote" and batch_idx % 625 == 0:
+            ckpt_path = os.path.join(ckptdir, f"epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
+            trainer.save_checkpoint(ckpt_path, weights_only=False)
+            print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
+            upload_file(ckpt_path,
+                    f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/checkpoints/epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
+
+
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
