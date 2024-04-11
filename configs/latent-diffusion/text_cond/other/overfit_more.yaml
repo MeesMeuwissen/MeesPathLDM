@@ -16,14 +16,14 @@ model:
     monitor: val/loss
     use_ema: False
     npz_path: FID_rat_overfit_20.npz
-    ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/04-03-remote-GEN-428/checkpoints/last.ckpt"
+    ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/04-10-remote-GEN-440/checkpoints/epoch_27_batch_0.ckpt"
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.CosineScheduler
       params:
         lr_warmup_steps: 1000
         lr_max: 1
         lr_start: 1e-5
-        total_training_steps: 18750 # Based  on length of trainloader and max_epochs, as well as batch size...
+        total_training_steps: 25000 # Based  on length of trainloader and max_epochs, as well as batch size...
           # dataset-17-bravo-1 heeft lengte 13553
           # rat-tissue heeft lengte 109923
     unet_config:
@@ -86,7 +86,7 @@ data:
           root: rat-tissue/patches
           csv: rat-tissue/patches.csv
           flip_p: 0.5
-          size: 10_000 #rat-tissue has 109923 patches, so 100k is not even enough...
+          size: 20_000 #rat-tissue has 109923 patches, so 100k is not even enough...
           crop_size: 256 # size of the images
     validation:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
@@ -98,7 +98,7 @@ data:
           crop_size: 256
 lightning:
   trainer:
-    max_epochs: 30
+    max_epochs: 20
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
     run_name: More overfitting. Continues run 440. Monitoring val/loss   #Name of the run as used by Neptune
     log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
