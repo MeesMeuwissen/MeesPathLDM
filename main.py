@@ -316,8 +316,8 @@ class ThesisCallback(Callback):
         if trainer.global_step % 5000 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
 
-        # Save a ckpt every 625 batches, which is every 10k patches when batch size is 16:
-        if opt.location == "remote" and batch_idx % 625 == 0:
+        # Save a ckpt every 3125 batches, which is every 100k patches when batch size is 16:
+        if opt.location == "remote" and batch_idx % 3125 == 0:
             ckpt_path = os.path.join(ckptdir, f"epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
             print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
