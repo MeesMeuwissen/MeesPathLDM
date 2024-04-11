@@ -312,8 +312,8 @@ class ThesisCallback(Callback):
     ) -> None:
         lr = trainer.model.optimizers().param_groups[0]["lr"]
         trainer.logger.log_metrics({"lr-abs": lr}, step=trainer.global_step)
-        # log the batch every 2000 batches ?
-        if trainer.global_step % 1000 == 0:
+        # log the batch every 5000 steps ?
+        if trainer.global_step % 5000 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
 
         # Save a ckpt every 625 batches, which is every 10k patches when batch size is 16:
