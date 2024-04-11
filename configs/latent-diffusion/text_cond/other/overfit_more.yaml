@@ -18,14 +18,13 @@ model:
     npz_path: FID_rat_overfit_20.npz
     ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/04-10-remote-GEN-440/checkpoints/epoch_27_batch_0.ckpt"
     scheduler_config: # 1000 warmup steps
-      target: ldm.lr_scheduler.CosineScheduler
+      target: ldm.lr_scheduler.LambdaLinearScheduler
       params:
-        lr_warmup_steps: 1000
-        lr_max: 1
-        lr_start: 1e-5
-        total_training_steps: 25000 # Based  on length of trainloader and max_epochs, as well as batch size...
-          # dataset-17-bravo-1 heeft lengte 13553
-          # rat-tissue heeft lengte 109923
+        warm_up_steps: [ 1000 ]
+        cycle_lengths: [ 10000000000000 ] # incredibly large number to prevent corner cases
+        f_start: [ 1.e-6 ]
+        f_max: [ 1. ]
+        f_min: [ 1. ]
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
