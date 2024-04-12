@@ -12,6 +12,7 @@ from typing import Any
 
 import neptune as neptune
 import boto3
+import omegaconf
 from aiosynawsmodules.services.s3 import upload_file
 import numpy as np
 import pytorch_lightning as pl
@@ -553,16 +554,23 @@ if __name__ == "__main__":
                 config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
             else:
                 print("Downloading UNET and first stage model ckpts separately...")
-                download_file(
-                    remote_path=config.model.params.unet_config.params.ckpt_path,
-                    local_path="/home/aiosyn/unet_model.ckpt",
-                )
-                config.model.params.unet_config.params.ckpt_path="/home/aiosyn/unet_model.ckpt"
-                download_file(
-                    remote_path=config.model.params.first_stage_config.params.ckpt_path,
-                    local_path="/home/aiosyn/first_stage_model.ckpt",
-                )
-                config.model.params.first_stage_config.params.ckpt_path = "/home/aiosyn/first_stage_model.ckpt"
+                try:
+                    download_file(
+                        remote_path=config.model.params.unet_config.params.ckpt_path,
+                        local_path="/home/aiosyn/unet_model.ckpt",
+                    )
+                    config.model.params.unet_config.params.ckpt_path="/home/aiosyn/unet_model.ckpt"
+                except omegaconf.errors.ConfigAttributeError:
+                    print("No unet checkpoint found, training from scratch")
+
+                try:
+                    download_file(
+                        remote_path=config.model.params.first_stage_config.params.ckpt_path,
+                        local_path="/home/aiosyn/first_stage_model.ckpt",
+                    )
+                    config.model.params.first_stage_config.params.ckpt_path = "/home/aiosyn/first_stage_model.ckpt"
+                except omegaconf.errors.ConfigAttributeError:
+                    print("No first stage checkpoint found")
         else:
             print("Models should already be downloaded.")
 
