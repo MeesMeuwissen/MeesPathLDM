@@ -46,12 +46,6 @@ class KidneyUnconditional(Dataset):
 
         self.crop_size = config.get("crop_size", None)
         self.flip_p = config.get("flip_p", 0)  # Default to 0 (no flips)
-        self.transform = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Lambda(permute_channels),
-            ]
-        )
 
     def __len__(self):
         return self.size
@@ -62,7 +56,12 @@ class KidneyUnconditional(Dataset):
 
         img = Image.open(img_path).convert("RGB")
         img = self.random_flips(img, self.flip_p)
-        img = self.transform(img)
+
+        img = F.pil_to_tensor(img)
+        img = permute_channels(img)
+
+        # Normalize to [-1,1]
+        img = (img / 127.5 - 1).to(torch.float32)
 
         if img.shape[1] > self.crop_size:
             img = self.get_random_crop(img, self.crop_size)
@@ -180,22 +179,13 @@ class KidneyConditional(KidneyUnconditional):
             msk = F.vflip(msk)
         return img, msk
 
-    def get_random_crop(self, image, mask, crop_size):
-        # Get the dimensions of the original image
-        width, height = image.shape[1], image.shape[0]
+    def get_random_crop(self, img, msk, crop_size):
+        x = np.random.randint(0, img.shape[1] - crop_size)
+        y = np.random.randint(0, img.shape[0] - crop_size)
 
-        # Calculate the maximum valid coordinates for the top-left corner of the crop
-        max_x = width - crop_size
-        max_y = height - crop_size
-
-        # Generate random coordinates for the bottom-left corner of the crop
-        x = random.randint(0, max_x)
-        y = random.randint(0, max_y)
-
-        # Perform the crop
-        cropped_image = image[y:y + crop_size, x:x + crop_size]
-        cropped_mask = mask[y:y + crop_size, x:x + crop_size]
-        return cropped_image, cropped_mask
+        img = img[y: y + crop_size, x: x + crop_size]
+        msk = msk[y: y + crop_size, x: x + crop_size]
+        return img, msk
 
 class RatKidneyConditional(KidneyConditional):
     # Size of rat-tissue dataset: 109923 patches
@@ -218,6 +208,7 @@ class RatKidneyConditional(KidneyConditional):
         thresholds = {'low': 0.2, 'medium': 0.4}  # Define thresholds for low, medium, and high prevalence
 
         caption = "This image showcases various types of tissue structures found in renal tissue. \n"
+        print(f"Probabilities: {probabilities}")
         for i, prob in enumerate(probabilities):
             if i == 0:
                 continue #First value should be ignored
@@ -242,6 +233,7 @@ class OverfitOneBatch(RatKidneyConditional):
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
         msk_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "msk")  # Read the msk part
 
+        print(img_path, msk_path)
         img_path = os.path.join(self.data_dir, img_path)
         msk_path = os.path.join(self.data_dir, msk_path)
         img = Image.open(img_path).convert("RGB")
@@ -259,7 +251,10 @@ class OverfitOneBatch(RatKidneyConditional):
         caption = self.create_caption(msk)
         # should be HWC
         assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
-        return {"image": img, "caption": caption}
+        return {
+            "image": img,
+            "caption": caption
+        }
 
 class HandwrittenDigits(Dataset):
     def __init__(self, config=None):
