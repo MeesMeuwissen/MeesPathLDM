@@ -74,21 +74,12 @@ class KidneyUnconditional(Dataset):
     def create_caption(self):
         return "A PAS stained slide of a piece of kidney tissue"  # Generic caption
 
-    def get_random_crop(self, image, crop_size):
-        # Get the dimensions of the original image
-        width, height = image.shape[0], image.shape[1]
+    def get_random_crop(self, img, crop_size):
+        x = np.random.randint(0, img.shape[1] - crop_size)
+        y = np.random.randint(0, img.shape[0] - crop_size)
 
-        # Calculate the maximum valid coordinates for the top-left corner of the crop
-        max_x = width - crop_size
-        max_y = height - crop_size
-
-        # Generate random coordinates for the top-left corner of the crop
-        top = torch.randint(0, max_x + 1, size=(1,))
-        left = torch.randint(0, max_y + 1, size=(1,))
-
-        # Crop the image
-        cropped_image = F.crop(image.permute(2, 0, 1), top, left, crop_size, crop_size).permute(1,2,0)
-        return cropped_image
+        img = img[y: y + crop_size, x: x + crop_size]
+        return img
 
     def random_flips(self, img, p):
         if torch.rand(1) < p:
