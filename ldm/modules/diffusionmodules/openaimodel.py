@@ -747,10 +747,18 @@ class UNetModel(nn.Module):
             emb = emb + self.label_emb(y)
 
         h = x.type(self.dtype)
+        # print("# input blocks:", len(self.input_blocks))
         for module in self.input_blocks:
+            print(module)
+            print(emb.shape)
+            print(h.shape)
+            print(len(hs))
             h = module(h, emb, context)
             hs.append(h)
         h = self.middle_block(h, emb, context)
+        print("Made it through the input_blocks")
+        # import sys
+        # sys.exit()
         for module in self.output_blocks:
             h = th.cat([h, hs.pop()], dim=1)
             h = module(h, emb, context)
