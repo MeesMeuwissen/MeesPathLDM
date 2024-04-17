@@ -541,7 +541,12 @@ class LatentDiffusion(DDPM):
         self.cond_stage_forward = cond_stage_forward
         self.clip_denoised = False
         self.bbox_tokenizer = None
-        self.n_classes = cond_stage_config.get("params", {}).get("n_classes", None)
+
+        # Zelf toegevoegd:
+        if cond_stage_config != "__is_unconditional__":
+            self.n_classes = cond_stage_config.get("params", {}).get("n_classes", None)
+        else:
+            self.n_classes = None
 
         self.restarted_from_ckpt = False
         if self.ckpt_path is not None:
@@ -1140,6 +1145,7 @@ class LatentDiffusion(DDPM):
 
         else:
             with torch.cuda.amp.autocast():
+                print("Conditioning at the moment of applying model:", cond)
                 x_recon = self.model(x_noisy, t, **cond)
 
         if isinstance(x_recon, tuple) and not return_ids:
