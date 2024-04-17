@@ -199,7 +199,6 @@ class RatKidneyConditional(KidneyConditional):
         thresholds = {'low': 0.2, 'medium': 0.4}  # Define thresholds for low, medium, and high prevalence
 
         caption = "This image showcases various types of tissue structures found in renal tissue. \n"
-        print(f"Probabilities: {probabilities}")
         for i, prob in enumerate(probabilities):
             if i == 0:
                 continue #First value should be ignored
@@ -224,7 +223,6 @@ class OverfitOneBatch(RatKidneyConditional):
         img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
         msk_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "msk")  # Read the msk part
 
-        print(img_path, msk_path)
         img_path = os.path.join(self.data_dir, img_path)
         msk_path = os.path.join(self.data_dir, msk_path)
         img = Image.open(img_path).convert("RGB")
@@ -246,6 +244,30 @@ class OverfitOneBatch(RatKidneyConditional):
             "image": img,
             "caption": caption
         }
+
+class OverfitUnconditional(KidneyUnconditional):
+    def __getitem__(self, idx):
+        idx = 15  # Always the same img
+        img_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "img")  # Read the img part
+
+        img_path = os.path.join(self.data_dir, img_path)
+        img = Image.open(img_path).convert("RGB")
+
+        img = self.random_flips(img, self.flip_p)
+
+        img = F.pil_to_tensor(img)
+        img = permute_channels(img)
+
+        # Normalize images to [-1,1]
+        img = (img / 127.5 - 1).to(torch.float32)
+
+        if img.shape[1] > self.crop_size:
+            img = self.get_random_crop(img, self.crop_size)
+
+        # should be HWC
+        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
+        return {"image": img} # What is correct return type? Test locally first
+
 
 class HandwrittenDigits(Dataset):
     def __init__(self, config=None):
