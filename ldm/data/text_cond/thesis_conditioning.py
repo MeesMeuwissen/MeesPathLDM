@@ -105,6 +105,7 @@ class KidneyConditional(KidneyUnconditional):
         img, msk = self.random_flips(img, msk, self.flip_p)
 
         img = F.pil_to_tensor(img)
+        msk = F.pil_to_tensor(msk)
         img = permute_channels(img)
 
         # Normalize images to [-1,1]
@@ -229,6 +230,7 @@ class OverfitOneBatch(RatKidneyConditional):
         msk = Image.open(msk_path)
 
         img = F.pil_to_tensor(img)
+        msk = F.pil_to_tensor(msk)
         img = permute_channels(img)
 
         # Normalize images to [-1,1]
@@ -239,11 +241,21 @@ class OverfitOneBatch(RatKidneyConditional):
 
         caption = self.create_caption(msk)
         # should be HWC
-        assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
+        assert img.shape[2] == 3, "img should be HxWx3 but is {}".format(img.shape)
         return {
             "image": img,
             "caption": caption
         }
+
+    def get_random_crop(self, img, msk, crop_size):
+        # Cropping should not be random anymore when overfitting. Instead, choose top-right corner
+        x = 0
+        y = 0
+
+        img = img[y: y + crop_size, x: x + crop_size]
+        msk = msk[y: y + crop_size, x: x + crop_size]
+        return img, msk
+
 
 class OverfitUnconditional(KidneyUnconditional):
     def __getitem__(self, idx):
