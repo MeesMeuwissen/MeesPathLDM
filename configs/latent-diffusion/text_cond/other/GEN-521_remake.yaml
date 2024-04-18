@@ -42,7 +42,8 @@ model:
     first_stage_config:
       target: ldm.models.autoencoder.VQModelInterface
       params:
-        ckpt_path: "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/pretrained/autoencoder/tcga_10x_vae.ckpt"
+        #ckpt_path: "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/pretrained/autoencoder/tcga_10x_vae.ckpt"
+        ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/autoencoder/tcga_10x_vae.ckpt"
         embed_dim: 3
         n_embed: 8192
         ddconfig:
