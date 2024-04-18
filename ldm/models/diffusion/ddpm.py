@@ -1145,7 +1145,6 @@ class LatentDiffusion(DDPM):
 
         else:
             with torch.cuda.amp.autocast():
-                print("Conditioning at the moment of applying model:", cond)
                 x_recon = self.model(x_noisy, t, **cond)
 
         if isinstance(x_recon, tuple) and not return_ids:
