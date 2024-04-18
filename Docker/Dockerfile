@@ -28,10 +28,10 @@ RUN conda install --quiet --name=base conda-libmamba-solver && \
 ENV AIOSYN_CONDA_ENV=core
 
 # Create conda environment.
-COPY --chown=aiosyn requirements_all.yaml ./
-RUN CONDA_OVERRIDE_CUDA=${CUDA_VERSION} conda env create --quiet --name=core --file=requirements_all.yaml && \
+COPY --chown=aiosyn requirements_18-4.yaml ./
+RUN CONDA_OVERRIDE_CUDA=${CUDA_VERSION} conda env create --quiet --name=core --file=requirements_18-4.yaml && \
     conda clean --all --yes && \
-    rm requirements_all.yaml
+    rm requirements_18-4.yaml
 
 # Install AWS-CLI in a separate environment
 RUN conda create --name=aws python=3.9 awscli=1.27.113 --channel=conda-forge
