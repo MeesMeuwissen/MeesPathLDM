@@ -12,7 +12,6 @@ from typing import Any
 import neptune as neptune
 import boto3
 import omegaconf
-from torchinfo import summary
 
 from aiosynawsmodules.services.s3 import upload_file
 import numpy as np
