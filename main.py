@@ -9,10 +9,11 @@ import time
 from functools import partial
 from typing import Any
 
-
 import neptune as neptune
 import boto3
 import omegaconf
+from torchinfo import summary
+
 from aiosynawsmodules.services.s3 import upload_file
 import numpy as np
 import pytorch_lightning as pl
@@ -31,7 +32,6 @@ from pytorch_lightning.callbacks import Callback, EarlyStopping, LearningRateMon
 
 # Neptune Logging
 from pytorch_lightning.loggers import NeptuneLogger
-
 
 # from pytorch_lightning.utilities.rank_zero import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info, rank_zero_only
@@ -83,7 +83,7 @@ def get_parser(**parser_kwargs):
         nargs="*",
         metavar="base_config.yaml",
         help="paths to base configs. Loaded from left-to-right. "
-        "Parameters can be overwritten or added with command-line options of the form `--key value`.",
+             "Parameters can be overwritten or added with command-line options of the form `--key value`.",
         default=list(),
     )
     parser.add_argument(
@@ -180,7 +180,7 @@ def worker_init_fn(_):
     if isinstance(dataset, Txt2ImgIterableBaseDataset):
         split_size = dataset.num_records // worker_info.num_workers
         # reset num_records to the true number to retain reliable length information
-        dataset.sample_ids = dataset.valid_ids[worker_id * split_size : (worker_id + 1) * split_size]
+        dataset.sample_ids = dataset.valid_ids[worker_id * split_size: (worker_id + 1) * split_size]
         current_id = np.random.choice(len(np.random.get_state()[1]), 1)
         return np.random.seed(np.random.get_state()[1][current_id] + worker_id)
     else:
@@ -189,18 +189,18 @@ def worker_init_fn(_):
 
 class DataModuleFromConfig(pl.LightningDataModule):
     def __init__(
-        self,
-        batch_size,
-        location,
-        train=None,
-        validation=None,
-        test=None,
-        predict=None,
-        wrap=False,
-        num_workers=None,
-        shuffle_test_loader=False,
-        use_worker_init_fn=False,
-        shuffle_val_dataloader=True,
+            self,
+            batch_size,
+            location,
+            train=None,
+            validation=None,
+            test=None,
+            predict=None,
+            wrap=False,
+            num_workers=None,
+            shuffle_test_loader=False,
+            use_worker_init_fn=False,
+            shuffle_val_dataloader=True,
     ):
         super().__init__()
         self.batch_size = batch_size
@@ -299,7 +299,8 @@ class ThesisCallback(Callback):
         super().__init__()
 
     def on_train_batch_end(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
+            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
+            batch_idx: int
     ) -> None:
         trainer.logger.log_metrics({"train/Loss": outputs["loss"]}, step=trainer.global_step)
 
@@ -308,13 +309,12 @@ class ThesisCallback(Callback):
         # Log the number of trainable params
         params = count_params(trainer.model.model._modules['diffusion_model'])
         trainer.logger.experiment["Trainable Parameters (unet)"] = f"{params:_}"
-        sys.exit()
 
     def on_train_end(self, trainer, pl_module):
         print("Training completed.")
 
     def on_train_batch_start(
-        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", batch: Any, batch_idx: int
+            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", batch: Any, batch_idx: int
     ) -> None:
         lr = trainer.model.optimizers().param_groups[0]["lr"]
         trainer.logger.log_metrics({"lr-abs": lr}, step=trainer.global_step)
@@ -328,9 +328,7 @@ class ThesisCallback(Callback):
             trainer.save_checkpoint(ckpt_path, weights_only=False)
             print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
             upload_file(ckpt_path,
-                    f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/checkpoints/epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
-
-
+                        f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/checkpoints/epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
 
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
@@ -453,7 +451,7 @@ if __name__ == "__main__":
     if opt.resume:
 
         if opt.resume[-1] == "/":
-            #Remove final "/"
+            # Remove final "/"
             opt.resume = opt.resume[:-1]
 
         logdir = "logs"
@@ -535,7 +533,7 @@ if __name__ == "__main__":
                 config.model.params.ckpt_path = resume_ckpt
                 trainer_resume_ckpt = resume_ckpt
             elif opt.location in ['maclocal']:
-                #Dit aanpassen als je local resumet
+                # Dit aanpassen als je local resumet
                 config.model.params.ckpt_path = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt"
                 trainer_resume_ckpt = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt"
         else:
