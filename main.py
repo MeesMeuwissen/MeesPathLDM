@@ -21,7 +21,8 @@ import torchvision
 import torchvision.transforms as transforms
 from get_data import download_dataset
 from ldm.data.base import Txt2ImgIterableBaseDataset
-from ldm.util import instantiate_from_config, plot_images, sync_logdir, CustomModelCheckpoint, attempt_key_read
+from ldm.util import instantiate_from_config, plot_images, sync_logdir, CustomModelCheckpoint, attempt_key_read, \
+    count_params
 from omegaconf import OmegaConf
 from packaging import version
 from PIL import Image
@@ -304,6 +305,10 @@ class ThesisCallback(Callback):
 
     def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         print("THESISCALLBACK: Training is starting...")
+        # Log the number of trainable params
+        params = count_params(trainer.model.model._modules['diffusion_model'])
+        trainer.logger.experiment["Trainable Parameters (unet)"] = f"{params:_}"
+        sys.exit()
 
     def on_train_end(self, trainer, pl_module):
         print("Training completed.")
@@ -360,7 +365,7 @@ class ThesisCallback(Callback):
         trainer.logger.experiment[f"validation_samples/generated_images"].log(
             grid,
             name=f"Validation sample created at epoch {trainer.current_epoch} and step {trainer.global_step}.",
-            description=f'Example of caption used: {val_inputs}',
+            description=f'Size of image: {list(samples_t[0].shape)}. Example of caption used: {val_inputs}.',
         )
         # Sync the whole logdirectory with aws, so upload it and overwrite is ok
         print("Syncing logdir from val epoch end...")
@@ -455,10 +460,10 @@ if __name__ == "__main__":
         if opt.location in ['local', 'maclocal']:
             set_sso_profile(profile_name="aws-aiosyn-data", region_name="eu-west-1")
 
-        #Example opt.resume arg: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-19-remote-GEN-353/checkpoints/xyz.ckpt
-        logdir = "logs/"+opt.resume.split("/")[-3]
+        # Example opt.resume arg: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-19-remote-GEN-353/checkpoints/xyz.ckpt
+        logdir = "logs/" + opt.resume.split("/")[-3]
         run_id = logdir.split('-')[-1]
-        run_name = 'GEN-'+ run_id
+        run_name = 'GEN-' + run_id
         print(f"Resuming run {run_name}. Downloading the ckpt from S3 ({opt.resume}) to local ({logdir})")
         download_file(
             remote_path=opt.resume,
@@ -466,8 +471,8 @@ if __name__ == "__main__":
         )
 
         print("Done")
-        #Set the checkpoint to the last one in the logdir
-        #resume_ckpt = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt" #Hardcoded for now
+        # Set the checkpoint to the last one in the logdir
+        # resume_ckpt = "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/logs/04-02-maclocal-GEN-412-test/checkpoints/end_epoch_1.ckpt" #Hardcoded for now
         resume_ckpt = logdir + "/checkpoints/last.ckpt"
     else:
         if opt.name:
@@ -540,7 +545,7 @@ if __name__ == "__main__":
             print("Running remotely. Downloading pretrained models ...")
 
             try:
-                remote_path=config.model.params.ckpt_path
+                remote_path = config.model.params.ckpt_path
                 one_model_ckpt = True
             except Exception:
                 one_model_ckpt = False
@@ -559,7 +564,7 @@ if __name__ == "__main__":
                         remote_path=config.model.params.unet_config.params.ckpt_path,
                         local_path="/home/aiosyn/unet_model.ckpt",
                     )
-                    config.model.params.unet_config.params.ckpt_path="/home/aiosyn/unet_model.ckpt"
+                    config.model.params.unet_config.params.ckpt_path = "/home/aiosyn/unet_model.ckpt"
                 except omegaconf.errors.ConfigAttributeError:
                     print("No unet checkpoint found, training from scratch")
 
@@ -626,7 +631,7 @@ if __name__ == "__main__":
             logger=neptune_logger,
             callbacks=[checkpoint_callback, ThesisCallback()],
             resume_from_checkpoint=trainer_resume_ckpt,
-            #num_sanity_val_steps=0, # DIT skipt de validation sanity check. Default = 2
+            # num_sanity_val_steps=0, # DIT skipt de validation sanity check. Default = 2
             auto_scale_batch_size=True
         )
 
@@ -684,6 +689,7 @@ if __name__ == "__main__":
             print("++++ NOT USING LR SCALING ++++")
             print(f"Setting learning rate to {model.learning_rate:.2e}")
 
+
         # allow checkpointing via USR1
         def melk(*args, **kwargs):
             # run all checkpoint hooks
@@ -694,11 +700,13 @@ if __name__ == "__main__":
                 trainer.save_checkpoint(ckpt_path)
                 sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
 
+
         def divein(*args, **kwargs):
             if trainer.global_rank == 0:
                 import pudb
 
                 pudb.set_trace()
+
 
         import signal
 
@@ -708,7 +716,7 @@ if __name__ == "__main__":
         if opt.train:
             try:
                 with torch.autocast(
-                    device_type="cuda" if torch.cuda.is_available() else "cpu"
+                        device_type="cuda" if torch.cuda.is_available() else "cpu"
                 ):  # This apparently solves everything
                     if trainer_config.skip_validation:
                         # Only perform the training, no FID computation.
@@ -716,7 +724,7 @@ if __name__ == "__main__":
                     else:
                         trainer.fit(model, data)
                     print("Trainer has fitted the model.")
-                    sync_logdir(opt, trainer, logdir, overwrite=True) #Sync logdir after training finishes
+                    sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
                     print(f"Best model path: {checkpoint_callback.best_model_path}")
                     print(f"Best model score: {checkpoint_callback.best_model_score}")
                     trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
