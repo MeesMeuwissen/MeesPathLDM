@@ -50,7 +50,7 @@ def plot_images(trainer: pl.Trainer, images: torch.Tensor, batch_idx: int,  num_
     trainer.logger.experiment[f"batch_samples"].log(
         fig,
         name=trainer.logger.name ,
-        description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}, batch_idx = {batch_idx}")
+        description=f"epoch = {trainer.current_epoch}, step = {trainer.global_step}, batch_idx = {batch_idx}, images shape = {list(images.shape)}")
     plt.close(fig)
 
 def sync_logdir(opt, trainer, logdir, overwrite=False):
