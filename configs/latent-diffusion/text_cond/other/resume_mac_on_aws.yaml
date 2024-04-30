@@ -1,5 +1,5 @@
 model:
-  base_learning_rate: 2e-5
+  base_learning_rate: 2.5e-5
   target: ldm.models.diffusion.ddpm.LatentDiffusion
   params:
     linear_start: 0.0015
@@ -27,7 +27,6 @@ model:
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
-        #ckpt_path: "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/pretrained/unet/unet.ckpt"
         image_size: 64
         in_channels: 3
         out_channels: 3
@@ -43,8 +42,6 @@ model:
     first_stage_config:
       target: ldm.models.autoencoder.VQModelInterface
       params:
-        #ckpt_path: "/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/pretrained/autoencoder/tcga_10x_vae.ckpt"
-        #ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/autoencoder/tcga_10x_vae.ckpt" As used by 530. But does not affect the loss at all.
         embed_dim: 3
         n_embed: 8192
         ddconfig:
@@ -77,7 +74,7 @@ data:
   target: main.DataModuleFromConfig
   params:
     batch_size: 16
-    num_workers: 0 # 0  better for debugging
+    num_workers: 8
     wrap: false
     train:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
@@ -88,7 +85,7 @@ data:
           csv: rat-tissue/patches.csv
           flip_p: 0.5
           size: 800 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
-          crop_size: 256  # size of the images
+          crop_size: 256 # size of the images
     validation:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
       params:
