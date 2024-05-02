@@ -600,6 +600,9 @@ if __name__ == "__main__":
                 log_model_checkpoints=trainer_config.log_model_checkpoints,
             )
         # Log all hyperparams
+        print(f"Monitoring {model.monitor} for checkpoint metric.")
+
+        print(config)
         neptune_logger.log_hyperparams(config)
         neptune_logger.log_hyperparams(trainer_config)
 
