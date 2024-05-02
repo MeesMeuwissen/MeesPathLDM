@@ -88,7 +88,7 @@ data:
           root: rat-tissue/patches
           csv: rat-tissue/patches.csv
           flip_p: 0.5
-          size: 800 #rat-tissue has 109923 patches, so 100k is not even enough...
+          size: 5_000 #rat-tissue has 109923 patches, so 100k is not even enough...
           crop_size: 256 # size of the images
     validation:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
@@ -96,7 +96,7 @@ data:
         config:
           root: rat-tissue/patches
           csv: rat-tissue/patches.csv
-          size: 1500
+          size: 8
           crop_size: 256
 lightning:
   trainer:

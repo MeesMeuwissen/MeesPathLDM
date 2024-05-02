@@ -85,7 +85,7 @@ data:
           root: rat-tissue/patches #start without / !
           csv: rat-tissue/patches.csv
           flip_p: 0.5
-          size: 800 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
+          size: 5_000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
           crop_size: 256  # size of the images
     validation:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
@@ -94,7 +94,7 @@ data:
           root: rat-tissue/patches
           subsample: True
           csv: rat-tissue/patches.csv
-          size: 16
+          size: 8
           crop_size: 256
 lightning:
   trainer:
