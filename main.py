@@ -709,7 +709,7 @@ if __name__ == "__main__":
         if opt.train:
             try:
                 # Don't use! float32 is the way to go
-                if trainer_config.autocast:
+                if trainer_config.get('autocast', False):
                     # Perform training with autocasting enabled.
                     with torch.amp.autocast(device_type='cuda'):
                         trainer.fit(model, data)
