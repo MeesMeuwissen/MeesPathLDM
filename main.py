@@ -412,7 +412,7 @@ if __name__ == "__main__":
     #               key: value
 
     now = datetime.datetime.now().strftime("%m-%dT%H-%M")
-    torch.set_float32_matmul_precision("medium")
+    torch.set_float32_matmul_precision("highest") # Changed this
 
     # add cwd for convenience and to make classes in this file available when
     # running as `python main.py`
@@ -423,7 +423,9 @@ if __name__ == "__main__":
     opt, unknown = parser.parse_known_args()
 
     sys.path.append(os.getcwd())
-    if opt.location in ["local", "maclocal"]:
+    if opt.location in ["maclocal"]:
+        taming_dir = os.path.abspath("src/taming-transformers")
+    elif opt.location in ["local"]:
         taming_dir = os.path.abspath("src/taming-transformers")
     elif opt.location == "remote":
         taming_dir = os.path.abspath("code/generationLDM/src/taming-transformers")
@@ -697,35 +699,25 @@ if __name__ == "__main__":
                 trainer.save_checkpoint(ckpt_path)
                 sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
 
-
-        def divein(*args, **kwargs):
-            if trainer.global_rank == 0:
-                import pudb
-
-                pudb.set_trace()
-
-
         import signal
 
         signal.signal(signal.SIGUSR1, melk)
-        signal.signal(signal.SIGUSR2, divein)
         # run
         if opt.train:
             try:
-                with torch.autocast(
-                        device_type="cuda" if torch.cuda.is_available() else "cpu"
-                ):  # This apparently solves everything
-                    if trainer_config.skip_validation:
-                        # Only perform the training, no FID computation.
-                        trainer.fit(model, data, val_dataloaders=None)
-                    else:
+                # Don't use! float32 is the way to go
+                if trainer_config.autocast:
+                    # Perform training with autocasting enabled.
+                    with torch.amp.autocast(device_type='cuda'):
                         trainer.fit(model, data)
-                    print("Trainer has fitted the model.")
-                    sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
-                    print(f"Best model path: {checkpoint_callback.best_model_path}")
-                    print(f"Best model score: {checkpoint_callback.best_model_score}")
-                    trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
-                    trainer.logger.experiment["Best model score"] = checkpoint_callback.best_model_score
+                else:
+                    trainer.fit(model, data)
+                print("Trainer has fitted the model.")
+                sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
+                print(f"Best model path: {checkpoint_callback.best_model_path}")
+                print(f"Best model score: {checkpoint_callback.best_model_score}")
+                trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
+                trainer.logger.experiment["Best model score"] = checkpoint_callback.best_model_score
             except Exception:
                 melk()
                 raise

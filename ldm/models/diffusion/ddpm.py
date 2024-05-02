@@ -1144,9 +1144,8 @@ class LatentDiffusion(DDPM):
             x_recon = fold(o) / normalization
 
         else:
-            with torch.cuda.amp.autocast():
-                x_recon = self.model(x_noisy, t, **cond)
-
+            # Crucial to remove autocast here! Training in float16 does not work for me, float32 is the way to go.
+            x_recon = self.model(x_noisy, t, **cond)
         if isinstance(x_recon, tuple) and not return_ids:
             return x_recon[0]
         else:
