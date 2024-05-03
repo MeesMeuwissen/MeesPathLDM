@@ -1,5 +1,5 @@
 model:
-  base_learning_rate: 2.5e-5
+  base_learning_rate: 2.5e-4
   target: ldm.models.diffusion.ddpm.LatentDiffusion
   params:
     linear_start: 0.0015
@@ -9,7 +9,7 @@ model:
     timesteps: 1000
     first_stage_key: image
     cond_stage_key: caption
-    image_size: 64
+    image_size: 16
     channels: 3
     cond_stage_trainable: false #frozen clip encoder
     conditioning_key: crossattn
@@ -27,7 +27,7 @@ model:
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
-        image_size: 64
+        image_size: 16
         in_channels: 3
         out_channels: 3
         model_channels: 96 # Channels for the model, was 192
@@ -75,7 +75,7 @@ data:
   target: main.DataModuleFromConfig
   params:
     batch_size: 16
-    num_workers: 8
+    num_workers: 8 # 0  better for debugging
     wrap: false
     train:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
@@ -85,8 +85,8 @@ data:
           root: rat-tissue/patches #start without / !
           csv: rat-tissue/patches.csv
           flip_p: 0.5
-          size: 5_000 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
-          crop_size: 256  # size of the images
+          size: 800 #Set nr of samples in the data set. If set very large, will default to the size of the full dataset.
+          crop_size: 64  # size of the images
     validation:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
       params:
@@ -94,12 +94,13 @@ data:
           root: rat-tissue/patches
           subsample: True
           csv: rat-tissue/patches.csv
-          size: 8
-          crop_size: 256
+          size: 8 # Dit geeft aan hoeveel samples er gemaakt moeten worden? Of hoeveel er worden gelezen?
+          crop_size: 64
+
 lightning:
   trainer:
-    max_epochs: 60
+    max_epochs: 10
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    autocast: False
-    run_name: Continues GEN-693  #Name of the run as used by Neptune
+    run_name: Making tiny imgs on remote. batch size 800  #Name of the run as used by Neptune
+    weights_only: False #Choose whether to only save model weights or also the optimizer state. ~2 Gb v ~5 Gb.
     log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
