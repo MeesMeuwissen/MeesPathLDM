@@ -99,7 +99,7 @@ data:
 
 lightning:
   trainer:
-    max_epochs: 10
+    max_epochs: 25
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
     run_name: Making tiny imgs on remote. batch size 800  #Name of the run as used by Neptune
     weights_only: False #Choose whether to only save model weights or also the optimizer state. ~2 Gb v ~5 Gb.
