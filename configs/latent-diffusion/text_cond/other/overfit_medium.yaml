@@ -9,7 +9,7 @@ model:
     timesteps: 1000
     first_stage_key: image
     cond_stage_key: caption
-    image_size: 16
+    image_size: 32
     channels: 3
     cond_stage_trainable: false #frozen clip encoder
     conditioning_key: crossattn
@@ -27,7 +27,7 @@ model:
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
       params:
-        image_size: 32
+        image_size: "Irrelevant but cant be empty"
         in_channels: 3
         out_channels: 3
         model_channels: 96 # Channels for the model, was 192
