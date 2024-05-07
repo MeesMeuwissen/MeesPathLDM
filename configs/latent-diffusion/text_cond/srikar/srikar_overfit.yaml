@@ -1,5 +1,5 @@
 model:
-  base_learning_rate: 2.5e-4
+  base_learning_rate: 2.5e-5
   target: ldm.models.diffusion.ddpm.LatentDiffusion
   params:
     linear_start: 0.0015
@@ -16,7 +16,7 @@ model:
     monitor: val/loss
     use_ema: False
     npz_path: FID_rat_overfit_20.npz
-    ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/04-10-remote-GEN-440/checkpoints/epoch_27_batch_0.ckpt"
+    ckpt_path: "s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/unet/pathldm/epoch_3-001.ckpt"
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
       params:
@@ -85,7 +85,7 @@ data:
           root: rat-tissue/patches
           csv: rat-tissue/patches.csv
           flip_p: 0.5
-          size: 20_000 #rat-tissue has 109923 patches, so 100k is not even enough...
+          size: 5_000 #rat-tissue has 109923 patches, so 100k is not even enough...
           crop_size: 256 # size of the images
     validation:
       target: ldm.data.text_cond.thesis_conditioning.OverfitOneBatch
@@ -93,11 +93,12 @@ data:
         config:
           root: rat-tissue/patches
           csv: rat-tissue/patches.csv
-          size: 1500
+          size: 16
           crop_size: 256
 lightning:
   trainer:
-    max_epochs: 20
+    max_epochs: 50
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
-    run_name: More overfitting. Continues run 440. Monitoring val/loss, linear lr   #Name of the run as used by Neptune
+    autocast: False
+    run_name: Overfitting, starting from Srikar. #Name of the run as used by Neptune
     log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
