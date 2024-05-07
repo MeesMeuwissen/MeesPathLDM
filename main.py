@@ -339,11 +339,13 @@ class ThesisCallback(Callback):
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         try:
             samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,size), dtype uint8)
+            samples_t = torch.from_numpy(samples / 255.0)
+            val_inputs = trainer.model.validation_step_inputs[0]
         except IndexError:
             # Sometimes happens when resuming a run in an unfortunate position
-            samples = torch.randint(255, (16, 3, trainer.model.image_size * 4, trainer.model.image_size * 4), dtype=torch.uint8)
-        samples_t = torch.from_numpy(samples / 255.0)
-        val_inputs = trainer.model.validation_step_inputs[0]
+            samples_t = torch.rand((16,3,trainer.model.image_size * 4, trainer.model.image_size * 4))
+            val_inputs = "Not a generated sample. Randomly sampled noise due to resuming a run in an unfortunate position."
+
 
         grid = torchvision.utils.make_grid(samples_t, nrow=4, padding=10)
         grid = transforms.functional.to_pil_image(grid)
