@@ -703,6 +703,7 @@ if __name__ == "__main__":
                 if trainer_config.get('autocast', False):
                     # Perform training with autocasting enabled.
                     with torch.amp.autocast(device_type='cuda'):
+                        print("RUNNING WITH AUTOCAST ENABLED")
                         trainer.fit(model, data)
                 else:
                     trainer.fit(model, data)
