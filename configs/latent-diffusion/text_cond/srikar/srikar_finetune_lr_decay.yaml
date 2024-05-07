@@ -94,7 +94,7 @@ data:
         config:
           root: rat-tissue/patches
           csv: rat-tissue/patches.csv
-          size: 1500
+          size: 16
           crop_size: 256
 lightning:
   trainer:
