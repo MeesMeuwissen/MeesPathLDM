@@ -320,29 +320,14 @@ class ThesisCallback(Callback):
         # log the batch every 5000 steps ?
         if trainer.global_step % 5000 == 0:
             plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
-
-        # Save a ckpt every 3125 batches, which is every 100k patches when batch size is 16:
-        if opt.location == "remote" and batch_idx % 3125 == 0:
-            ckpt_path = os.path.join(ckptdir, f"epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
-            trainer.save_checkpoint(ckpt_path, weights_only=False)
-            print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
-            upload_file(ckpt_path,
-                        f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/checkpoints/epoch_{trainer.current_epoch}_batch_{batch_idx}.ckpt")
-
     def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
         # hopefully progress
 
         print(f"Finished the epoch, global step:{trainer.global_step}.")
-        if opt.location == 'remote':
-            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}.ckpt")
-            trainer.save_checkpoint(ckpt_path, weights_only=False)
-            print(f"Uploading checkpoint end_epoch_{trainer.current_epoch}.ckpt ...")
-            upload_file(ckpt_path, f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/checkpoints/end_epoch_{trainer.current_epoch}.ckpt")
-        else:
-            ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
-            trainer.save_checkpoint(ckpt_path, weights_only=False)
-            print(f"Saved checkpoint at {ckpt_path}")
+        ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
+        trainer.save_checkpoint(ckpt_path, weights_only=False)
+        print(f"Saved checkpoint at {ckpt_path}")
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
         lr = trainer.model.optimizers().param_groups[0]["lr"]
@@ -352,7 +337,7 @@ class ThesisCallback(Callback):
         print("Starting validation ...")
 
     def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
-        samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,256,256), dtype uint8)
+        samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,size), dtype uint8)
         samples_t = torch.from_numpy(samples / 255.0)
         val_inputs = trainer.model.validation_step_inputs[0]
 
