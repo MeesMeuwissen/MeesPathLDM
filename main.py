@@ -691,7 +691,8 @@ if __name__ == "__main__":
                 ckpt_path = os.path.join(ckptdir, "last.ckpt")
                 print("ckpt path:", ckpt_path)
                 trainer.save_checkpoint(ckpt_path)
-                sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
+
+                sync_logdir(opt, trainer, logdir, overwrite=False)  # Sync logdir after training finishes
 
         import signal
 
@@ -708,7 +709,7 @@ if __name__ == "__main__":
                 else:
                     trainer.fit(model, data)
                 print("Trainer has fitted the model.")
-                sync_logdir(opt, trainer, logdir, overwrite=True)  # Sync logdir after training finishes
+                sync_logdir(opt, trainer, logdir, overwrite=False)  # Sync logdir after training finishes
                 print(f"Best model path: {checkpoint_callback.best_model_path}")
                 print(f"Best model score: {checkpoint_callback.best_model_score}")
                 trainer.logger.experiment["Best model path"] = checkpoint_callback.best_model_path
