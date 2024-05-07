@@ -98,7 +98,7 @@ data:
           crop_size: 256
 lightning:
   trainer:
-    max_epochs: 60
+    max_epochs: 80
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
     autocast: False
     run_name: Continues GEN-693  #Name of the run as used by Neptune
