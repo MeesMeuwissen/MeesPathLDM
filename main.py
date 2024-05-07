@@ -256,7 +256,7 @@ class DataModuleFromConfig(pl.LightningDataModule):
             init_fn = None
         return DataLoader(
             self.datasets["validation"],
-            batch_size=self.batch_size,
+            batch_size=self.batch_size//2, #Halved this
             num_workers=self.num_workers,
             worker_init_fn=init_fn,
             shuffle=False,
