@@ -375,8 +375,8 @@ class TimedTraining(Callback):
     ) -> None:
         if time.time() - self.time > self.interval:
             ckpt_path = os.path.join(ckptdir, f"timed_ckpt")
-            #trainer.save_checkpoint(ckpt_path, weights_only=False)
-            #upload_file(ckpt_path, overwrite=True)
+            trainer.save_checkpoint(ckpt_path, weights_only=False)
+            upload_file(ckpt_path, overwrite=True)
             print(f"Saved and uploaded timed checkpoint at {ckpt_path}. Count: {self.count}.")
             trainer.logger.log_metrics({'Timed ckpt count': self.count})
 
