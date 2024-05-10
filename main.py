@@ -382,6 +382,11 @@ class TimedTraining(Callback):
 
             val_batch = next(iter(trainer.val_dataloaders[0]))
             batch_idx = 1 # Not sure if this works
+
+            # Reset the val step outputs
+            trainer.model.validation_step_outputs = []
+            trainer.model.validation_step_inputs = []
+
             trainer.model.validation_step(val_batch, batch_idx)
 
             samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,size), dtype uint8)
@@ -673,7 +678,7 @@ if __name__ == "__main__":
 
         trainer.logger.experiment["location"] = opt.location
         trainer.logger.experiment["base"] = opt.base[0].split("/")[-1]
-        trainer.logger.experiment["Timed ckpt interval (h)"] = "{:.2f}".format(timer_interval) #Log timer interval.
+        trainer.logger.experiment["Timed ckpt interval (h)"] = "{:.2f}".format(timer_interval/3600) #Log timer interval.
 
         assert config.data.location in [
             "local",
