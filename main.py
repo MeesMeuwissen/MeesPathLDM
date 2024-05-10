@@ -7,7 +7,7 @@ import os
 import sys
 import time
 from functools import partial
-from typing import Any
+from typing import Any, Dict
 
 import neptune as neptune
 import boto3
@@ -325,9 +325,6 @@ class ThesisCallback(Callback):
         # hopefully progress
 
         print(f"Finished the epoch, global step:{trainer.global_step}.")
-        ckpt_path = os.path.join(ckptdir, f"end_epoch_{trainer.current_epoch}")
-        trainer.save_checkpoint(ckpt_path, weights_only=False)
-        print(f"Saved checkpoint at {ckpt_path}")
     def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
         # print(f"Starting epoch {trainer.current_epoch}. ")
         lr = trainer.model.optimizers().param_groups[0]["lr"]
@@ -358,6 +355,50 @@ class ThesisCallback(Callback):
         # Sync the whole logdirectory with aws, so upload it and overwrite is ok
         print("Syncing logdir from val epoch end...")
         sync_logdir(opt, trainer, logdir)
+
+class TimedTraining(Callback):
+    def __init__(self, interval):
+        super().__init__()
+        self.time = 0
+        self.interval = interval #Interval in seconds.
+        self.count = 0
+
+    def state_dict(self) -> Dict[str, Any]:
+        return {'time': self.time, 'interval': self.interval, 'count': self.count}
+
+    def load_state_dict(self, state_dict: Dict[str, Any]) -> None:
+        self.time = state_dict['time']
+        self.interval = state_dict['interval']
+        self.count = state_dict['count']
+    def on_train_batch_end(
+        self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
+    ) -> None:
+        if time.time() - self.time > self.interval:
+            ckpt_path = os.path.join(ckptdir, f"timed_ckpt")
+            #trainer.save_checkpoint(ckpt_path, weights_only=False)
+            #upload_file(ckpt_path, overwrite=True)
+            print(f"Saved and uploaded timed checkpoint at {ckpt_path}. Count: {self.count}.")
+            trainer.logger.log_metrics({'Timed ckpt count': self.count})
+
+            val_batch = next(iter(trainer.val_dataloaders[0]))
+            batch_idx = 1 # Not sure if this works
+            trainer.model.validation_step(val_batch, batch_idx)
+
+            samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,size), dtype uint8)
+            samples_t = torch.from_numpy(samples / 255.0)
+            val_inputs = trainer.model.validation_step_inputs[0]
+
+            grid = torchvision.utils.make_grid(samples_t, nrow=4, padding=10)
+            grid = transforms.functional.to_pil_image(grid)
+
+            trainer.logger.experiment[f"validation_samples/generated_images"].log(
+                grid,
+                name=f"Samples generated from after {self.count} timed instances of length {self.interval/3600 : .2f} hours ({self.interval} seconds).",
+                description=f'Size of image: {list(samples_t[0].shape)}. Example of caption used: {val_inputs}.',
+            )
+
+            self.time = time.time()
+            self.count += 1
 
 
 if __name__ == "__main__":
@@ -571,9 +612,6 @@ if __name__ == "__main__":
 
         model = instantiate_from_config(config.model)
         print("Model loaded.")
-
-        print(f"Monitoring {model.monitor} for checkpoint metric.")
-
         # define my own trainer with id if resuming:
         if opt.resume:
             neptune_logger = NeptuneLogger(
@@ -593,7 +631,6 @@ if __name__ == "__main__":
         # Log all hyperparams
         print(f"Monitoring {model.monitor} for checkpoint metric.")
 
-        print(config)
         neptune_logger.log_hyperparams(config)
         neptune_logger.log_hyperparams(trainer_config)
 
@@ -612,6 +649,9 @@ if __name__ == "__main__":
             monitor=model.monitor,
             save_weights_only=False,
         )
+        timer_interval = trainer_config.get("timer_interval", 60*60)
+        timer = TimedTraining(interval=timer_interval) # interval in seconds
+
         config.data["location"] = opt.location
 
         print(f"Max epochs: {trainer_config.max_epochs}")
@@ -622,7 +662,7 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=1,
             logger=neptune_logger,
-            callbacks=[checkpoint_callback, ThesisCallback()],
+            callbacks=[checkpoint_callback, ThesisCallback(), timer],
             resume_from_checkpoint=trainer_resume_ckpt,
             # num_sanity_val_steps=0, # DIT skipt de validation sanity check. Default = 2
             auto_scale_batch_size=True
@@ -633,6 +673,7 @@ if __name__ == "__main__":
 
         trainer.logger.experiment["location"] = opt.location
         trainer.logger.experiment["base"] = opt.base[0].split("/")[-1]
+        trainer.logger.experiment["Timed ckpt interval (h)"] = "{:.2f}".format(timer_interval) #Log timer interval.
 
         assert config.data.location in [
             "local",
