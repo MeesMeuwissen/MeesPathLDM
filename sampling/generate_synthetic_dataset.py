@@ -36,7 +36,6 @@ def get_parser():
         "-c", "--config_path", type=str, const=True, default=False, nargs="?", help="Path to the config file"
     )
     parser.add_argument('-s', "--save_s3", type=bool, default=False, nargs="?", help="Save the images to S3?")
-    parser.add_argument('-n', '--nr_samples', type=int, default=100, help="Number of synthetic images to generate.")
 
     return parser
 
@@ -97,7 +96,7 @@ def save_sample(sample, output_dir):
     return image_path
 
 
-def main(config, nr_samples, location, save_to_S3 = False):
+def main(config, location, save_to_S3 = False):
     opt = config.sampling_stuff
 
     ckpt_path = opt.ckpt_path
@@ -147,7 +146,7 @@ def main(config, nr_samples, location, save_to_S3 = False):
         f.write(f"Model path used: {ckpt_path}\n")
         f.write(f"FID compared to real data: {fid}\n")
         f.write(f"Depth of sampling: {opt.ddim_steps}\n")
-        f.write(f"Number of samples: {nr_samples}\n")
+        f.write(f"Number of samples: {batch_size* opt.batches}\n")
         f.write(f"Batch size: {batch_size}\n")
         f.write(f"Caption function used: {opt.caption_config.target.split('.')[-1]}\n")
 
@@ -182,7 +181,7 @@ def zip_directory(directory, zip_filename):
 def calculate_FID(paths, FID_path, device):
     model = InceptionV3().to(device)
     mu_fake, sig_fake = calculate_activation_statistics(paths, model, device=device)
-    with np.load(Path(f"/Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/FID/FID_outputs/{FID_path}")) as f:
+    with np.load(Path(f"/home/aiosyn/code/generationLDM/FID/FID_outputs/{FID_path}")) as f:
         m1, s1 = f["mu"], f["sig"]
 
     fid = calculate_frechet_distance(m1, s1, mu_fake, sig_fake)
@@ -219,7 +218,6 @@ if __name__ == "__main__":
 
     config_path = options.config_path
     save_to_S3 = options.save_s3
-    nr_samples = options.nr_samples
 
     config = OmegaConf.load(config_path)
-    main(config, nr_samples, options.location, save_to_S3)
+    main(config, options.location, save_to_S3)
