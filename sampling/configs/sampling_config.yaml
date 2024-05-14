@@ -80,7 +80,7 @@ sampling_stuff:
   ckpt_path: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/05-10-remote-GEN-743/timed_ckpt.ckpt # Make S3 url for S3 sampling
   same_x_T: False
   batch_size: 8 # Not too high otherwise I run out of RAM
-  batches: 2 # How many batches to run?
+  batches: 50 # How many batches to run?
   size: 64  # Eventual img will be 4 times as large! (normal = 64)
   ddim_steps: 50 # Steps for the reverse process
   show_intermediates: False
