@@ -19,7 +19,6 @@ model:
     conditioning_key: crossattn
     monitor: val/loss
     use_ema: False
-
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
       params:
@@ -44,12 +43,9 @@ model:
         transformer_depth: 1
         context_dim: 512
         use_fp16: False # Half precision floats, default is float32
-        ckpt_path: something so that it can be deleted
-
     first_stage_config:
       target: ldm.models.autoencoder.VQModelInterface
       params:
-        ckpt_path: Will be deleted so does not matter #must be something so it can be deleted
         embed_dim: 3
         n_embed: 8192
         ddconfig:
@@ -77,5 +73,19 @@ model:
         # regular clip: openai/clip-vit-base-patch32
         version: "vinid/plip"
         max_length: 154
+
+sampling_stuff:
+  caption_config:
+    target: sampling.captions.Glomeruli
+  ckpt_path: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/05-10-remote-GEN-743/timed_ckpt.ckpt # Make S3 url for S3 sampling
+  same_x_T: False
+  batch_size: 8 # Not too high otherwise I run out of RAM
+  batches: 100 # How many batches to run?
+  size: 64  # Eventual img will be 4 times as large! (normal = 64)
+  ddim_steps: 50 # Steps for the reverse process
+  show_intermediates: False
+  log_every_t: 10 # Used in saving intermediate samples
+  FID_path: FID_rat_full.npz # FID path only used when generating larger dataset
+  upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
 
 
