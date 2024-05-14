@@ -181,9 +181,12 @@ def zip_directory(directory, zip_filename):
 def calculate_FID(paths, FID_path, device):
     model = InceptionV3().to(device)
     mu_fake, sig_fake = calculate_activation_statistics(paths, model, device=device)
-    with np.load(Path(f"/home/aiosyn/code/generationLDM/FID/FID_outputs/{FID_path}")) as f:
-        m1, s1 = f["mu"], f["sig"]
-
+    try:
+        with np.load(Path(f"/home/aiosyn/code/generationLDM/FID/FID_outputs/{FID_path}")) as f:
+            m1, s1 = f["mu"], f["sig"]
+    except FileNotFoundError:
+        with np.load(Path(f"//Users/Mees_1/MasterThesis/Aiosyn/code/ThesisProject/generationLDM/FID/FID_outputs/{FID_path}")) as f:
+            m1, s1 = f["mu"], f["sig"]
     fid = calculate_frechet_distance(m1, s1, mu_fake, sig_fake)
     print(f"Calculated FID: {fid}")
     return fid
