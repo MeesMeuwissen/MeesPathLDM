@@ -1,4 +1,5 @@
 import argparse
+import csv
 import glob
 import os
 import sys
@@ -62,7 +63,8 @@ def get_samples(model, shape, batch_size, caption_generator, opt):
         ut = get_unconditional_token(batch_size)
         uc = model.get_learned_conditioning(ut).to(torch.float32)
 
-        ct = get_conditional_token(batch_size, caption_generator.generate())
+        caption = caption_generator.generate()
+        ct = get_conditional_token(batch_size, caption)
         cc = model.get_learned_conditioning(ct).to(torch.float32)
 
         print("Starting sampling ...")
@@ -84,7 +86,7 @@ def get_samples(model, shape, batch_size, caption_generator, opt):
     x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
     x_samples_ddim = (x_samples_ddim * 255).to(torch.uint8).cpu()
 
-    return x_samples_ddim
+    return x_samples_ddim, caption
 
 def save_sample(sample, output_dir):
     image_uuid = str(uuid.uuid4())
@@ -93,7 +95,7 @@ def save_sample(sample, output_dir):
 
     sample = to_pil(sample)
     sample.save(image_path)
-    return image_path
+    return image_path, image_uuid + ".png"
 
 
 def main(config, location, save_to_S3 = False):
@@ -121,18 +123,24 @@ def main(config, location, save_to_S3 = False):
     else:
         output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}"
     os.makedirs(output_dir, exist_ok=True)
-
+    csv_file = open(output_dir+"/patches.csv", mode="w")
+    writer = csv.writer(csv_file)
+    header = ['image_uuid', 'caption']
+    writer.writerow(header)
     caption_generator = instantiate_from_config(opt.caption_config)
 
     print(f"Generating {opt.batches} batches synthetic images of size {batch_size} ...")
     print(f"Saving to {output_dir} ... ")
     img_paths = []
+
     for i in tqdm(range(opt.batches)):
         print(f"Batch {i+1}/{opt.batches}...")
-        samples = get_samples(model, shape, batch_size, caption_generator=caption_generator, opt=opt)
+        samples, caption = get_samples(model, shape, batch_size, caption_generator=caption_generator, opt=opt)
         for sample in samples:
-            path = save_sample(sample, output_dir)
+            path, uuid = save_sample(sample, output_dir)
             img_paths.append(path)
+            row = [uuid, caption]
+            writer.writerow(row)
 
 
     if opt.get("FID_path", False):
@@ -169,6 +177,11 @@ def main(config, location, save_to_S3 = False):
             output_dir + "/metadata.txt",
             f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*opt.size}/metadata.txt",
         )
+        upload_file(
+            output_dir + "/patches.csv",
+            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * opt.size}/patches.csv",
+        )
+    csv_file.close()
     print("Done")
 
 
