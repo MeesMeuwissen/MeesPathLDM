@@ -86,5 +86,5 @@ sampling_stuff:
   show_intermediates: False
   log_every_t: 10 # Used in saving intermediate samples
   upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
-
+  FID_path: FID_rat_full.npz
 
