@@ -495,9 +495,12 @@ if __name__ == "__main__":
         logdir = "logs"
         if opt.location in ['local', 'maclocal']:
             set_sso_profile(profile_name="aws-aiosyn-data", region_name="eu-west-1")
-
+        if "checkpoints" in opt.resume:
+            offset = -3
+        else:
+            offset = -2
         # Example opt.resume arg: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/03-19-remote-GEN-353/checkpoints/xyz.ckpt
-        logdir = "logs/" + opt.resume.split("/")[-3]
+        logdir = "logs/" + opt.resume.split("/")[offset]
         run_id = logdir.split('-')[-1]
         run_name = 'GEN-' + run_id
         print(f"Resuming run {run_name}. Downloading the ckpt from S3 ({opt.resume}) to local ({logdir})")
