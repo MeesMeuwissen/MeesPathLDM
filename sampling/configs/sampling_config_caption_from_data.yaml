@@ -79,7 +79,7 @@ sampling_stuff:
     target: sampling.captions.RatKidneyLikeDataset
     params:
       config:
-        location: maclocal
+        location: remote
         root: rat-tissue/patches
         csv: rat-tissue/patches.csv
         size: 16
