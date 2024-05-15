@@ -1540,7 +1540,7 @@ class LatentDiffusion(DDPM):
 
         super().validation_step(batch, batch_idx)
 
-        # only generate 1500 samples
+        # only generate 1500 samples at most
         out = self.validation_step_outputs
         if not len(out) or len(out) * len(out[0]) < 1500:
             samples = self.get_fid_samples(batch)
