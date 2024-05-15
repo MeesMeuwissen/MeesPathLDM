@@ -10,6 +10,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
+
+from get_data import download_dataset
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.util import instantiate_from_config
 from omegaconf import OmegaConf
@@ -109,6 +111,11 @@ def main(config, location, save_to_S3 = False):
         print("Downloading model ...")
         download_model(ckpt_path)
         config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
+
+        download_dataset(
+            dataset_name='rat-tissue/patches', #Todo make this a parameter in the config if needed
+            location=location
+        )
 
     model = instantiate_from_config(config.model).to(device)
     model.eval()
