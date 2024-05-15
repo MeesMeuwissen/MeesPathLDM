@@ -16,7 +16,7 @@ model:
     conditioning_key: crossattn
     monitor: val/loss
     use_ema: False
-    npz_path: FID_full.npz
+    npz_path: FID_rat_full.npz
     scheduler_config: # 1000 warmup steps
       target: ldm.lr_scheduler.LambdaLinearScheduler
       params:
