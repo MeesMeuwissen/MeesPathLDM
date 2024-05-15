@@ -76,14 +76,13 @@ model:
 
 sampling_stuff:
   caption_config:
-    caption_config:
-      target: sampling.captions.RatKidneyLikeDataset
-      params:
-        config:
-          location: maclocal
-          root: rat-tissue/patches
-          csv: rat-tissue/patches.csv
-          size: 16
+    target: sampling.captions.RatKidneyLikeDataset
+    params:
+      config:
+        location: maclocal
+        root: rat-tissue/patches
+        csv: rat-tissue/patches.csv
+        size: 16
   ckpt_path: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/05-10-remote-GEN-743/timed_ckpt.ckpt # Make S3 url for S3 sampling
   same_x_T: False
   batch_size: 8 # Not too high otherwise I run out of RAM
