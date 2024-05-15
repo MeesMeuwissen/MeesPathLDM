@@ -103,10 +103,8 @@ class RatKidneyLikeDataset(CaptionGenerator):
     def generate(self):
 
         msk_path = self.csv.iloc[self.id]["relative_path"].replace("{file}", "msk")  # Read the msk part
-        self.id += 1
-        if self.id > self.size:
-            self.id = 0
-            print("Resetting id")
+
+        self.id = np.random.randint(0,self.size) # Randomly select next id.
         msk_path = os.path.join(self.data_dir, msk_path)
         msk = Image.open(msk_path)
         msk = F.pil_to_tensor(msk)
