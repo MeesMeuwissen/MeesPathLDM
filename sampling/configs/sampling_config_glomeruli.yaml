@@ -87,5 +87,5 @@ sampling_stuff:
 
   upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
   batches: 50 # How many batches to run?
-  name: Glomeruli
+  name: Glomeruli # Will be included in the name on S3
 
