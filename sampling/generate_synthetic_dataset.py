@@ -126,7 +126,8 @@ def main(config, location, save_to_S3 = False):
     now = datetime.now()
     formatted_now = now.strftime("%m-%d_%H%M")
     if location in ['remote']:
-        output_dir = f"/home/aiosyn/data/generated_samples/{formatted_now}_size={4*opt.size}"
+        name=opt.get('name', 'noname')
+        output_dir = f"/home/aiosyn/data/generated_samples/{formatted_now}_{name}"
     else:
         output_dir = f"/Users/Mees_1/MasterThesis/Aiosyn/data/generated_samples/{formatted_now}"
     os.makedirs(output_dir, exist_ok=True)
