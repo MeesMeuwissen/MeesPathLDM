@@ -280,6 +280,36 @@ class OverfitUnconditional(KidneyUnconditional):
         assert img.shape == torch.Size([256, 256, 3]), "img shape should be [256,256,3] but is {}".format(img.shape)
         return {"image": img} # What is correct return type? Test locally first
 
+class OnlyGlomeruli(RatKidneyConditional):
+    ''''
+    This class is used to return only those images that contin Glomeruli or Sclerotic Glomeruli.
+    It does so by first computing what indices correspond to accepted images lower than config.size.
+
+    '''
+    def __init__(self, config):
+
+        super().__init__(config)
+        self.filtered_indices = [i for i in range(self.size) if self.contains_glomeruli(i)]
+
+    def contains_glomeruli(self, idx):
+        msk_path = self.csv.iloc[idx]["relative_path"].replace("{file}", "msk")  # Read the msk part
+        msk_path = os.path.join(self.data_dir, msk_path)
+        msk = Image.open(msk_path)
+        msk = F.pil_to_tensor(msk)
+        if 4 in msk or 5 in msk:
+            return True
+        return False
+
+    def __len__(self):
+        return len(self.filtered_indices)
+
+    def __getitem__(self, idx):
+        # Get the actual index from the filtered indices
+        actual_idx = self.filtered_indices[idx]
+        return super().__getitem__(actual_idx)
+
+
+
 
 class HandwrittenDigits(Dataset):
     def __init__(self, config=None):
