@@ -26,18 +26,23 @@ def show_images(images, title=""):
 
     fig, axes = plt.subplots(1, num_images, figsize=(num_images * 4, 4))
 
+    # Create an empty axis for the title
+    fig.add_subplot(111, frameon=False)
+    plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    plt.title(title, fontsize=16)  # Adjust fontsize as needed
+
     for i in range(num_images):
         image = images[i].permute(1, 2, 0).cpu().numpy()  # Convert torch tensor to numpy array
         axes[i].imshow(image)
         axes[i].axis('off')
 
-    plt.title(title)
+    plt.tight_layout()
     plt.show()
 
 
 if __name__ == "__main__":
     sys.path.append("src/taming-transformers/") # Add taming lib
-    config_path = "/sampling/configs/sampling_config.yaml"
+    config_path = "configs/sampling_config_local.yaml"
 
     config = OmegaConf.load(config_path)
     opt = config.sampling_stuff
@@ -50,7 +55,7 @@ if __name__ == "__main__":
 
     caption_generator = instantiate_from_config(opt.caption_config)
     # Readable averages:  [0.0037, 0.0001, 0.0271, 0.4418, 0.0121, 0.0219, 0.376, 0.1172]
-    caption = caption_generator.generate([0,0,0,0.3,1,0,0])
+    caption = caption_generator.generate()
     print("Caption used:", caption)
 
     def get_unconditional_token(batch_size):
@@ -121,6 +126,7 @@ if __name__ == "__main__":
             x_samples_ddim = model.decode_first_stage(samples_ddim)
             x_samples_ddim = torch.clamp((x_samples_ddim + 1.0) / 2.0, min=0.0, max=1.0)
             x_samples_ddim = (x_samples_ddim * 255).to(torch.uint8).cpu()
+            print(f"{x_samples_ddim.shape = }")
 
             grid = make_grid(x_samples_ddim, nrow=2)
-            show_images(x_samples_ddim)
+            show_images(x_samples_ddim, title=caption)
