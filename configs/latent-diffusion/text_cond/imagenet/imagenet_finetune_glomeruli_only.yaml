@@ -17,13 +17,13 @@ model:
     use_ema: False
     npz_path: FID_rat_full.npz
     scheduler_config: # 1000 warmup steps
-      target: ldm.lr_scheduler.LambdaLinearScheduler
+      target: ldm.lr_scheduler.CosineScheduler
       params:
-        warm_up_steps: [ 1000 ]
-        cycle_lengths: [ 10000000000000 ] # incredibly large number to prevent corner cases
-        f_start: [ 1.e-6 ]
-        f_max: [ 1. ]
-        f_min: [ 1. ]
+        lr_warmup_steps: 1000
+        lr_max: 1
+        lr_start: 1e-3
+        total_training_steps: 11000 # This should be dataloader size * epochs / batch_size.
+        #Glomeruli dataloader size: 16742
 
     unet_config:
       target: ldm.modules.diffusionmodules.openaimodel.UNetModel
@@ -103,3 +103,4 @@ lightning:
     skip_validation: False # Determines if the validation loop (calculating FID values) is run or not.
     run_name: All data should contain glomeruli or sclerotic glomeruli. Imagenet start. # Name of the run as used by Neptune
     log_model_checkpoints: False # Tells Neptune to log the model ckpts to Neptune or not. Model ckpts will always be saved to S3
+    timer_interval: 1800
