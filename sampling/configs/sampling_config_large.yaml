@@ -79,7 +79,7 @@ sampling_stuff:
     target: sampling.captions.RatKidneyConditional
   ckpt_path: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/05-10-remote-GEN-744/timed_ckpt.ckpt # Make S3 url for S3 sampling
   same_x_T: False
-  batch_size: 8 # Not too high otherwise I run out of RAM
+  batch_size: 4 # Not too high otherwise I run out of RAM
   size: 128  # Eventual img will be 4 times as large! (normal = 64)
   ddim_steps: 50 # Steps for the reverse process
   show_intermediates: False
