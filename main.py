@@ -374,9 +374,9 @@ class TimedTraining(Callback):
         self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any, batch_idx: int
     ) -> None:
         if time.time() - self.time > self.interval:
-            ckpt_path = os.path.join(ckptdir, f"timed_ckpt.ckpt")
+            ckpt_path = os.path.join(ckptdir, f"timed_ckpt_{self.count}.ckpt")
             trainer.save_checkpoint(ckpt_path, weights_only=False)
-            upload_file(local_path=ckpt_path, remote_path=f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/timed_ckpt.ckpt", overwrite=True)
+            upload_file(local_path=ckpt_path, remote_path=f"s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/{logdir}/timed_ckpt_{self.count}.ckpt", overwrite=True)
             print(f"Saved and uploaded timed checkpoint at {ckpt_path}. Count: {self.count}.")
             trainer.logger.log_metrics({'Timed ckpt count': self.count})
 
