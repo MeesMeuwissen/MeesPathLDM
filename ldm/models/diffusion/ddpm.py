@@ -1554,7 +1554,12 @@ class LatentDiffusion(DDPM):
     def on_validation_epoch_end(self):
         if not self.track_fid:
             return
-        all_samples = np.vstack(self.validation_step_outputs).transpose(0, 2, 3, 1)
+
+        try:
+            all_samples = np.vstack(self.validation_step_outputs).transpose(0, 2, 3, 1)
+        except ValueError:
+            # Sometimes happens when resuming a run
+            return None
 
         if not self.real_stats:
             # Read the real mu, sigma once
