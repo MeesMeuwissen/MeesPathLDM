@@ -76,7 +76,7 @@ model:
 
 sampling_stuff:
   caption_config:
-    target: sampling.captions.RatKidneyConditional
+    target: sampling.captions.RatKidneyLikeDataset
   ckpt_path: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/05-10-remote-GEN-744/timed_ckpt.ckpt # Make S3 url for S3 sampling
   same_x_T: False
   batch_size: 4 # Not too high otherwise I run out of RAM
@@ -87,5 +87,5 @@ sampling_stuff:
   # Below is for dataset generation only
   upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
   FID_path: FID_rat_full.npz
-  batches: 10 # How many batches to run?
+  batches: 625 # How many batches to run?
 
