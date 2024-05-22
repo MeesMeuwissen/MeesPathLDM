@@ -119,8 +119,7 @@ class RatKidneyLikeDataset(CaptionGenerator):
         probabilities = hist / len(pixels)  # Probability of a random pixel being a certain class
 
         classes = ['White background, should be ignored', 'Arteries', 'Atrophic Tubuli', 'Tubuli', 'Glomeruli',
-                   'Sclerotic Glomeruli', 'other kidney tissue',
-                   'Dilated Tubuli']
+                   'Sclerotic Glomeruli', 'other kidney tissue', 'Dilated Tubuli']
         thresholds = {'low': 0.2, 'medium': 0.4}  # Define thresholds for low, medium, and high prevalence
 
         caption = "This image showcases various types of tissue structures found in renal tissue. \n"
