@@ -1,0 +1,90 @@
+# finetuned from u-net model trained on imagenet
+# vae fine-tuned on tcga dataset
+# copied from uncond_srikar_finetune.yaml
+# attempt to sample with this.
+model:
+  base_learning_rate: 2.5e-5
+  target: ldm.models.diffusion.ddpm.LatentDiffusion
+  params:
+    linear_start: 0.0015
+    linear_end: 0.0195
+    num_timesteps_cond: 1
+    log_every_t: 200
+    timesteps: 1000
+    first_stage_key: image
+    cond_stage_key: caption
+    image_size: 64
+    channels: 3
+    cond_stage_trainable: false #frozen clip encoder
+    conditioning_key: crossattn
+    monitor: val/loss
+    use_ema: False
+    scheduler_config: # 1000 warmup steps
+      target: ldm.lr_scheduler.LambdaLinearScheduler
+      params:
+        warm_up_steps: [ 1000 ]
+        cycle_lengths: [ 10000000000000 ] # incredibly large number to prevent corner cases
+        f_start: [ 1.e-6 ]
+        f_max: [ 1. ]
+        f_min: [ 1. ]
+
+    unet_config:
+      target: ldm.modules.diffusionmodules.openaimodel.UNetModel
+      params:
+        image_size: 64
+        in_channels: 3
+        out_channels: 3
+        model_channels: 192
+        attention_resolutions: [8, 4, 2]
+        num_res_blocks: 2
+        channel_mult: [ 1,2,3,5 ]
+        num_heads: 1
+        use_spatial_transformer: True
+        transformer_depth: 1
+        context_dim: 512
+        use_fp16: False # Half precision floats, default is float32
+    first_stage_config:
+      target: ldm.models.autoencoder.VQModelInterface
+      params:
+        embed_dim: 3
+        n_embed: 8192
+        ddconfig:
+          double_z: false
+          z_channels: 3
+          resolution: 256
+          in_channels: 3
+          out_ch: 3
+          ch: 128
+          ch_mult:
+          - 1
+          - 2
+          - 4
+          num_res_blocks: 2
+          attn_resolutions: []
+          dropout: 0.0
+        lossconfig:
+          target: torch.nn.Identity
+
+    cond_stage_config:
+      target: ldm.modules.encoders.modules.FrozenCLIPEmbedder
+      params:
+        # plip is the pathology clip model
+        # plip- model: vinid/plip
+        # regular clip: openai/clip-vit-base-patch32
+        version: "vinid/plip"
+        max_length: 154
+
+sampling_stuff:
+  caption_config:
+    target: sampling.captions.RatKidneyConditional
+  ckpt_path: s3://aiosyn-data-eu-west-1-bucket-ops/models/generation/logs/05-10-remote-GEN-744/timed_ckpt.ckpt # Make S3 url for S3 sampling
+  same_x_T: False
+  batch_size: 5 # Not too high otherwise I run out of RAM
+  size: 128  # Eventual img will be 4 times as large! (normal = 64)
+  ddim_steps: 50 # Steps for the reverse process
+  show_intermediates: False
+  log_every_t: 10 # Used in saving intermediate samples
+  # Below is for dataset generation only
+  upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
+  batches: 2 # How many batches to run?
+
