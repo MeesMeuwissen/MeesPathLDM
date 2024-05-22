@@ -21,7 +21,7 @@ from torchvision import transforms
 from tqdm import tqdm
 from ldm.data.text_cond.thesis_conditioning import RatKidneyConditional
 
-from aiosynawsmodules.services.s3 import download_file, upload_file
+from aiosynawsmodules.services.s3 import download_file, upload_file, exists_s3
 from aiosynawsmodules.services.sso import set_sso_profile
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -168,30 +168,69 @@ def main(config, location, save_to_S3 = False):
 
     if save_to_S3 or location == "remote":
         print(f"Saving samples in {output_dir} to S3 ...")
-        for i, img_path in enumerate(img_paths[:10]):
-            upload_file(
-                img_path,
-                f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * opt.size}/subsample_{i}.png",
-            )
 
-        if opt.upload_all:
-            print("Zipping and uploading all samples ... ")
-            zip_directory(output_dir, "generated_images.zip")
-            upload_file(
-                "generated_images.zip",
-                f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*opt.size}/generated_images.zip",
-            )
-        upload_file(
-            output_dir + "/metadata.txt",
-            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4*opt.size}/metadata.txt",
-        )
-        upload_file(
-            output_dir + "/patches.csv",
-            f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * opt.size}/patches.csv",
-        )
+        if "s3_directory" in opt.keys():
+            upload_with_dir_name(img_paths, opt, output_dir)
+
+        else:
+            upload_normally(img_paths, f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * opt.size}", opt, output_dir)
+
     csv_file.close()
     print("Done")
 
+def upload_with_dir_name(img_paths, opt,output_dir):
+    s3_dir = opt.get("s3_directory")
+    print(f"{s3_dir = }")
+
+    index = 0
+    remote_path = f"{s3_dir}/generated_images_{index}.zip",
+    while exists_s3(remote_path):
+        index += 1
+        remote_path = f"{s3_dir}/generated_images_{index}.zip",
+
+
+    if opt.upload_all:
+        print("Zipping and uploading all samples ... ")
+        zip_directory(output_dir, "generated_images.zip")
+        upload_file(
+            "generated_images.zip",
+            f"{s3_dir}/generated_images_{index}.zip",
+        )
+    upload_file(
+        output_dir + "/metadata.txt",
+        f"{s3_dir}/metadata_{index}.txt",
+    )
+    upload_file(
+        output_dir + "/patches.csv",
+        f"{s3_dir}/patches_{index}.csv",
+    )
+
+    return None
+
+def upload_normally(img_paths,s3_dir,opt,output_dir):
+    for i, img_path in enumerate(img_paths[:10]):
+        upload_file(
+            img_path,
+            f"{s3_dir}/subsample_{i}.png",
+        )
+
+    if opt.upload_all:
+        print("Zipping and uploading all samples ... ")
+        zip_directory(output_dir, "generated_images.zip")
+        upload_file(
+            "generated_images.zip",
+            f"{s3_dir}/generated_images.zip",
+        )
+    upload_file(
+        output_dir + "/metadata.txt",
+        f"{s3_dir}/metadata.txt",
+    )
+    upload_file(
+        output_dir + "/patches.csv",
+        f"{s3_dir}/patches.csv",
+    )
+
+    return None
 
 def zip_directory(directory, zip_filename):
     with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
