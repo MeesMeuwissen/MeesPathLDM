@@ -243,5 +243,7 @@ if __name__ == "__main__":
     config_path = options.config_path
     save_to_S3 = options.save_s3
 
+    print(f"{config_path = }")
     config = OmegaConf.load(config_path)
+    print(config)
     main(config, options.location, save_to_S3)
