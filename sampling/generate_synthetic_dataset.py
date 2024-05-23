@@ -169,14 +169,13 @@ def main(config, location, save_to_S3 = False):
 
     if save_to_S3 or location == "remote":
         print(f"Saving samples in {output_dir} to S3 ...")
+        csv_file.close()
 
         if "s3_directory" in opt.keys():
             upload_with_dir_name(img_paths, opt, output_dir)
 
         else:
             upload_normally(img_paths, f"s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/{formatted_now}-size={4 * opt.size}", opt, output_dir)
-
-    csv_file.close()
     print("Done")
 
 def upload_with_dir_name(img_paths, opt,output_dir):
