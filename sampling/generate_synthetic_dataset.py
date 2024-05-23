@@ -39,6 +39,7 @@ def get_parser():
         "-c", "--config_path", type=str, const=True, default=False, nargs="?", help="Path to the config file"
     )
     parser.add_argument('-s', "--save_s3", type=bool, default=False, nargs="?", help="Save the images to S3?")
+    parser.add_argument('-i', "--index", type=int, default=0, nargs="?", help="What index is this? (Used when having multiple samplers at the same time)")
 
     return parser
 
@@ -182,12 +183,7 @@ def upload_with_dir_name(img_paths, opt,output_dir):
     s3_dir = opt.get("s3_directory")
     print(f"{s3_dir = }")
 
-    index = 0
-    remote_path = f"{s3_dir}/generated_images_{index}.zip",
-    while exists_s3(remote_path):
-        index += 1
-        remote_path = f"{s3_dir}/generated_images_{index}.zip",
-
+    index = opt.index
 
     if opt.upload_all:
         print("Zipping and uploading all samples ... ")
