@@ -93,7 +93,7 @@ sampling_stuff:
   # Below is for dataset generation only
   upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
   FID_path: FID_rat_full.npz
-  batches: 500 # How many batches to run?
+  batches: 80 # How many batches to run?
   s3_directory: "s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/512_images" # Optional argument, don't include final '/'
 
 
