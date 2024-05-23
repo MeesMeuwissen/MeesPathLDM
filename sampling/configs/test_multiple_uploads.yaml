@@ -94,6 +94,6 @@ sampling_stuff:
   upload_all: True #If uploading to S3, this determines if the whole set is uploaded or only a subset
   FID_path: FID_rat_full.npz
   batches: 5 # How many batches to run?
-  s3_dir: "s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/multiple_test" # Optional argument, don't include final '/'
+  s3_directory: "s3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets/generation/synthetic-data/multiple_test" # Optional argument, don't include final '/'
 
 
