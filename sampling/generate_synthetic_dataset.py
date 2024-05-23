@@ -280,5 +280,6 @@ if __name__ == "__main__":
 
     print(f"{config_path = }")
     config = OmegaConf.load(config_path)
+    config.sampling_stuff.index = options.index
     print(config)
     main(config, options.location, save_to_S3)
