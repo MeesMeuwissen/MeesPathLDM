@@ -80,6 +80,20 @@ class LambdaWarmUpCosineScheduler2:
 
 
 class LambdaLinearScheduler(LambdaWarmUpCosineScheduler2):
+    '''
+    Example usage:
+    target: ldm.lr_scheduler.LambdaLinearScheduler
+      params:
+        warm_up_steps: [ 1000 ]
+        cycle_lengths: [ 10000000000000 ] # incredibly large number to prevent corner cases
+        f_start: [ 1.e-6 ]
+        f_max: [ 1. ]
+        f_min: [ 1. ]
+
+
+    '''
+
+
     def schedule(self, n, **kwargs):
         cycle = self.find_in_interval(n)
         n = n - self.cum_cycles[cycle]
@@ -99,6 +113,18 @@ class LambdaLinearScheduler(LambdaWarmUpCosineScheduler2):
             return f
 
 class CosineScheduler:
+    """
+    Example usage:
+
+    target: ldm.lr_scheduler.CosineScheduler
+        params:
+            lr_warmup_steps: 100
+            lr_max: 1
+            lr_start: 1e-3
+            total_training_steps: 18000 # This should be dataloader size * epochs / batch_size.
+            CosineScheduler(lr_warmup_steps=100, lr_max=0.1, lr_start=1e-2, total_training_steps=total_steps)
+
+    """
 
     def __init__(self, lr_warmup_steps, lr_max, lr_start, total_training_steps):
 

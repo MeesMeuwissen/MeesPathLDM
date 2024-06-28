@@ -1,0 +1,133 @@
+run_name: bb-kidney-75_25
+continue_train: false
+aws:
+    profile: 'aws-aiosyn-workloads-dev'
+    region: 'eu-west-1'
+    timeout_min: 600   # timeout after 10h
+    dedicated: false # Mees changed from true
+callbacks:
+    EarlyStopping:
+        patience: 30
+        monitor: val_loss
+        mode: min
+        verbose: 1
+    LearningRateMonitor:
+        logging_interval: epoch
+    AiosynModelCheckpoint: # save model locally to opt/ml/model/<run_name>/<run_name>.ckpt
+        dirpath: '/tmp/model' # equivalent to `model_path` in SaveModelDynamo Keras callback
+        save_top_k: 1 # save top k epochs
+        monitor: 'val_loss'
+        mode: min
+        upload_to_aws: true # TODO switch to true
+        auto_insert_metric_name: false
+data:
+    augmentations:
+        training:
+            HorizontalFlip:
+                p: 0.5
+            VerticalFlip:
+                p: 0.5
+            RandomCrop:
+              always_apply: true
+            p: 0.5
+        validation:
+            CenterCrop:
+                always_apply: true
+    data_path: /tmp/data/kidney/ # TODO use this after testing
+    read_partial: 1.0 # TODO set to 1.0
+    shuffle_images: true
+    num_workers: 4
+    batch:
+      #val_indexer: LabelWeightedBatchIndex
+      indexer: LabelWeightedBatchIndex
+      class_sampling_ratios:
+          0: 1.0 # No mask (background) # Moet dit 0.0 zijn? Wat doet dit?
+          1: 1.0 # Glomeruli
+    flatten_mask: False
+    s3_data:
+      model_bucket_root: 's3://aiosyn-data-eu-west-1-bucket-ops/models'
+      data_bucket_root: 's3://aiosyn-data-eu-west-1-bucket-ops/patch_datasets'
+      subsample: false # TODO set to false
+      datasets:
+        - dataset_name: rat-glomeruli-train_75_25
+          splits_filename: splits_empty_val.yaml # 198 real patches
+        - dataset_name: rat-glomeruli-true-validation # Validation set should be fixed. 219 samples
+          splits_filename: splits_empty_train.yaml # Should contain only validation stuff. and also training: []
+
+    patch:
+      border_weights: null
+      crop_size: 412
+      mask_crop_size: 228
+      shuffle: True
+      weights: # Everything is 1
+        0: 1.0 # No mask (background)
+        1: 1.0 # Glomeruli
+      label_map:
+        0: 0 # No mask (background)
+        1: 1 # Glomeruli
+logger:
+    class_name: AiosynNeptuneLogger
+    params:
+      project: aiosyn/generation
+      log_model_checkpoints: False
+      log_images: True
+      mapped_labels:
+        0:
+          name: "Empty background"
+          color: "#000000"
+        1:
+          name: "Glomeruli"
+          color: "#F62EFE"
+model:
+    framework: pytorch
+    model_type: 'unet'
+    learning_rate: 0.0001
+    lr_scheduler:
+      class_name: ReduceLROnPlateau
+      class_params:
+        mode: "min"
+        patience: 15
+        factor: 0.5
+        verbose: true
+      lr_params:
+        monitor: val_loss
+    loss:
+        class_name: 'cce'
+        parameters: {}
+    metric:
+        - class_name: 'Dice'
+          metric_name: 'dice_macro'
+          parameters:
+            average: macro
+            num_classes: 2
+            ignore_index: null # in ons geval is class 0 ook boeiend
+        - class_name: confusion_matrix
+          parameters:
+            task: multiclass
+            num_classes: 2
+            ignore_index: null # zelfde hier
+    n_classes: 2
+    pixel_spacing: 1.0
+training:
+    batch_size: 16 # TODO: Set to 16
+    epochs: 200 # TODO set to 100 or higher
+    validation_batch_size: 32
+    verbose: 1
+    random_seed: 43
+inference:
+    argmax_dtype: uint8
+    batch_size: 16 # Testing: Decrease batch size to fit into local GPU.
+    channel_filter: null
+    digitization_bins: null
+    empty_value: 0
+    input_channels:  3
+    input_dtype: float32
+    input_patch_shape: [956, 956]
+    output_channels: 2
+    output_dtype: float32
+    output_patch_shape: [772, 772]
+    patch_crop: [772, 772]
+    patch_stride: [772, 772]
+    pixel_spacing: 1.0
+    pop_layers: 0
+    quantize_dtype: null
