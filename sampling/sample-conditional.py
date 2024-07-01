@@ -1,22 +1,17 @@
 import warnings
-from pathlib import Path
-import numpy as np
+
 import torch
 from omegaconf import OmegaConf
-from torchvision import transforms
-import os, sys
-import pytorch_lightning as pl
-from torchinfo import summary
+import sys
 
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.util import instantiate_from_config
 warnings.filterwarnings("ignore")
 import matplotlib.pyplot as plt
 from torchvision.utils import make_grid
-from PIL import Image
+
 from einops import rearrange
-import pickle
-from captions import RatKidneyConditional
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
@@ -42,7 +37,7 @@ def show_images(images, title=""):
 
 if __name__ == "__main__":
     sys.path.append("src/taming-transformers/") # Add taming lib
-    config_path = "configs/sampling_config_local.yaml"
+    config_path = "configs/sampling_config_template.yaml"
 
     config = OmegaConf.load(config_path)
     opt = config.sampling_stuff
