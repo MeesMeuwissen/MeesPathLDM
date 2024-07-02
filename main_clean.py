@@ -20,7 +20,7 @@ import torchvision
 import torchvision.transforms as transforms
 from get_data import download_dataset
 from ldm.data.base import Txt2ImgIterableBaseDataset
-from ldm.util import instantiate_from_config, CustomModelCheckpoint, attempt_key_read, \
+from ldm.util import instantiate_from_config, CustomModelCheckpoint, plot_images, \
     count_params
 from omegaconf import OmegaConf
 from packaging import version
@@ -289,6 +289,67 @@ class DataModuleFromConfig(pl.LightningDataModule):
             worker_init_fn=init_fn,
         )
 
+class ThesisCallback(Callback):
+    def __init__(self):
+        super().__init__()
+
+    def on_train_batch_end(
+            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", outputs: STEP_OUTPUT, batch: Any,
+            batch_idx: int
+    ) -> None:
+        trainer.logger.log_metrics({"train/Loss": outputs["loss"]}, step=trainer.global_step)
+
+    def on_train_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        print("THESISCALLBACK: Training is starting...")
+        # Log the number of trainable params
+        params = count_params(trainer.model.model._modules['diffusion_model'])
+        trainer.logger.experiment["Trainable Parameters (unet)"] = f"{params:_}"
+
+    def on_train_end(self, trainer, pl_module):
+        print("Training completed.")
+
+    def on_train_batch_start(
+            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", batch: Any, batch_idx: int
+    ) -> None:
+        lr = trainer.model.optimizers().param_groups[0]["lr"]
+        trainer.logger.log_metrics({"lr-abs": lr}, step=trainer.global_step)
+        # log the batch every 5000 steps ?
+        if trainer.global_step % 5000 == 0:
+            plot_images(trainer, batch["image"], batch_idx, 4, len(batch["image"]) // 4)
+    def on_train_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        # Potentially fun to sample a single image after every, say, 10 epochs with the same caption to see it
+        # hopefully progress
+
+        print(f"Finished the epoch, global step:{trainer.global_step}.")
+    def on_train_epoch_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        # print(f"Starting epoch {trainer.current_epoch}. ")
+        lr = trainer.model.optimizers().param_groups[0]["lr"]
+        print(f"{lr = }, {trainer.current_epoch = }")
+
+    def on_validation_start(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        print("Starting validation ...")
+
+    def on_validation_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule") -> None:
+        try:
+            samples = trainer.model.validation_step_outputs[0]  # A batch of 8/16 imgs, it has shape (8,3,size), dtype uint8)
+            samples_t = torch.from_numpy(samples / 255.0)
+            val_inputs = trainer.model.validation_step_inputs[0]
+        except IndexError:
+            # Sometimes happens when resuming a run in an unfortunate position
+            samples_t = torch.rand((16,3,trainer.model.image_size * 4, trainer.model.image_size * 4))
+            val_inputs = "Not a generated sample. Randomly sampled noise due to resuming a run in an unfortunate position."
+
+
+        grid = torchvision.utils.make_grid(samples_t, nrow=4, padding=10)
+        grid = transforms.functional.to_pil_image(grid)
+
+        trainer.logger.experiment[f"validation_samples/generated_images"].log(
+            grid,
+            name=f"Validation sample created at epoch {trainer.current_epoch} and step {trainer.global_step}.",
+            description=f'Size of image: {list(samples_t[0].shape)}. Example of caption used: {val_inputs}.',
+        )
+
+
 
 if __name__ == "__main__":
     # custom parser to specify config files, train, test and debug mode,
@@ -400,44 +461,7 @@ if __name__ == "__main__":
 
         # model
         print("Attempting to load model ...")
-
-        if opt.location == "remote":
-            print("Running remotely. Downloading pretrained models ...")
-
-            try:
-                remote_path = config.model.params.ckpt_path
-                one_model_ckpt = True
-            except Exception:
-                one_model_ckpt = False
-
-            if one_model_ckpt:
-                download_file(
-                    remote_path=config.model.params.ckpt_path,
-                    local_path="/home/aiosyn/model.ckpt",
-                )
-                print("Downloaded one ckpt for the whole model. Ready to load.")
-                config.model.params.ckpt_path = "/home/aiosyn/model.ckpt"
-            else:
-                print("Downloading UNET and first stage model ckpts separately...")
-                try:
-                    download_file(
-                        remote_path=config.model.params.unet_config.params.ckpt_path,
-                        local_path="/home/aiosyn/unet_model.ckpt",
-                    )
-                    config.model.params.unet_config.params.ckpt_path = "/home/aiosyn/unet_model.ckpt"
-                except omegaconf.errors.ConfigAttributeError:
-                    print("No unet checkpoint found, training from scratch")
-
-                try:
-                    download_file(
-                        remote_path=config.model.params.first_stage_config.params.ckpt_path,
-                        local_path="/home/aiosyn/first_stage_model.ckpt",
-                    )
-                    config.model.params.first_stage_config.params.ckpt_path = "/home/aiosyn/first_stage_model.ckpt"
-                except omegaconf.errors.ConfigAttributeError:
-                    print("No first stage checkpoint found")
-        else:
-            print("Models should already be downloaded.")
+        print("Models should already be downloaded.")
 
         model = instantiate_from_config(config.model)
         print("Model loaded.")
@@ -482,7 +506,7 @@ if __name__ == "__main__":
             accelerator="gpu",
             devices=1,
             logger=neptune_logger,
-            callbacks=[checkpoint_callback],
+            callbacks=[checkpoint_callback, ThesisCallback()],
             # num_sanity_val_steps=0, # DIT skipt de validation sanity check. Default = 2
             auto_scale_batch_size=True
         )
