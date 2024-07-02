@@ -354,12 +354,6 @@ if __name__ == "__main__":
         assert False, "Unknown location"
     sys.path.append(taming_dir)
 
-    # Set Neptune mode, project and API key
-    # Do not leak api key, set it through the batch call instead or smth like that. Below is not the correct key
-    os.environ["NEPTUNE_API_TOKEN"] = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJmNzI3NGI2MS1kYTQwLTRiMDctODMwMS05YWI1OWMyMTg2MTIifQ=="
-    os.environ["NEPTUNE_PROJECT"] = "aiosyn/generation"
-    os.environ["NEPTUNE_MODE"] = opt.neptune_mode
-
     os.environ["PYTHONUNBUFFERED"] = "1"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -450,9 +444,10 @@ if __name__ == "__main__":
         # define my own trainer with id if resuming:
 
 
+        # Provide own API key and project name here
         neptune_logger = NeptuneLogger(
-            api_key="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJmNzI3NGI2MS1kYTQwLTRiMDctODMwMS05YWI1OWMyMTg2MTIifQ==",
-            project="generation",
+            api_key="",
+            project="",
             name=trainer_config["run_name"],
         )
         # Log all hyperparams
