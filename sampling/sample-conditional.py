@@ -51,6 +51,12 @@ if __name__ == "__main__":
     caption_generator = instantiate_from_config(opt.caption_config)
     # Readable averages:  [0.0037, 0.0001, 0.0271, 0.4418, 0.0121, 0.0219, 0.376, 0.1172]
     caption = caption_generator.generate()
+    # Alternatively, write your own caption here. For example,
+    #
+    # caption = "This image showcases various types of tissue structures found in renal tissue. \n"
+    # caption += "The image shows a low amount of Tubuli.\n"
+    # caption += f"There is a lot of Glomeruli visible in the image.\n"
+
     print("Caption used:", caption)
 
     def get_unconditional_token(batch_size):
